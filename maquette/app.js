@@ -385,6 +385,43 @@ document.addEventListener('click', e => {
 /* retour arrière du navigateur (cache) : on s'assure que le rideau est levé */
 addEventListener('pageshow', e => { if (e.persisted) { wipe.classList.remove('is-cover'); if (window.gsap) gsap.set(wipe, { clearProps: 'clipPath' }); } });
 
+/* ---------------- Espace pro : le bon de commande sort de l'en-tête ---------------- */
+const slipScrim = document.createElement('div'); slipScrim.className = 'slip-scrim';
+const slip = document.createElement('div'); slip.className = 'slip'; slip.setAttribute('role', 'dialog'); slip.setAttribute('aria-label', 'Bon de commande — Espace pro'); slip.setAttribute('aria-hidden', 'true');
+const slipRef = 'PRO-' + new Date().getFullYear() + '-' + String(Math.random() * 9000 + 1000 | 0);
+slip.innerHTML = `<div class="slip__slot"></div><div class="slip__paper">
+  <button class="slip__close" aria-label="Fermer">×</button>
+  <div class="slip__head"><span>Bon de commande — Espace pro</span><span>Page : 1</span></div>
+  <div class="slip__meta"><span>Réf. ${slipRef}</span><span>${new Date().toLocaleDateString('fr-FR').replace(/\//g, '.')}</span></div>
+  <table><thead><tr><th>Réf.</th><th>Désignation</th><th>Qté</th><th>Formats</th></tr></thead><tbody>
+    <tr><td>PRO-01</td><td>Épiceries &amp; magasins bio</td><td>6+</td><td>1 L · 35 cl</td></tr>
+    <tr><td>PRO-02</td><td>Restaurants &amp; bars</td><td>12+</td><td>35 cl</td></tr>
+    <tr><td>PRO-03</td><td>Événements &amp; festivals</td><td>sur devis</td><td>1 L · fûts</td></tr>
+  </tbody></table>
+  <div class="slip__total"><span>Total à commander</span><a href="#" class="slip__cta">Espace pro ↗</a></div>
+  <i class="slip__code"></i>
+  <p class="slip__end">*** Santé ! Kombucha bio non pasteurisé ***</p></div>`;
+document.body.append(slipScrim, slip);
+const slipPaper = q('.slip__paper', slip);
+function slipOpen() {
+  if (slip.classList.contains('is-on')) return slipClose();
+  slip.classList.add('is-on'); slipScrim.classList.add('is-on'); slip.setAttribute('aria-hidden', 'false');
+  if (typeof lenis !== 'undefined' && lenis) lenis.stop();
+  /* le ticket sort par à-coups, comme une imprimante thermique */
+  if (window.gsap && !reduced) gsap.fromTo(slipPaper, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.1, ease: 'steps(9)' });
+  else slipPaper.style.clipPath = 'inset(0 0 0 0)';
+}
+function slipClose() {
+  slip.classList.remove('is-on'); slipScrim.classList.remove('is-on'); slip.setAttribute('aria-hidden', 'true');
+  if (typeof lenis !== 'undefined' && lenis && !q('.pdp.is-open') && !q('.menu.is-open')) lenis.start();
+  if (window.gsap && !reduced) gsap.to(slipPaper, { clipPath: 'inset(0% 0% 100% 0%)', duration: .35, ease: 'power2.in' });
+  else slipPaper.style.clipPath = 'inset(0 0 100% 0)';
+}
+document.addEventListener('click', e => { const t = e.target.closest('[data-pro]'); if (t) { e.preventDefault(); e.stopPropagation(); slipOpen(); } }, true);
+slipScrim.addEventListener('click', slipClose);
+q('.slip__close', slip).addEventListener('click', slipClose);
+addEventListener('keydown', e => { if (e.key === 'Escape' && slip.classList.contains('is-on')) slipClose(); });
+
 /* ---------------- Outils maquette ---------------- */
 q('.tools__toggle').onclick = () => q('.tools').classList.toggle('is-open');
 qa('.tools input').forEach(i => i.addEventListener('change', () => {
@@ -716,8 +753,14 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   if (has('.stores__bike')) gsap.fromTo('.stores__bike', { x: -200 }, { x: () => q('.stores__map').offsetWidth + 40, ease: 'none', scrollTrigger: { trigger: '.stores', start: 'top 70%', end: 'bottom 20%', scrub: 1.2 } });
 
   /* --- Footer : le perso se pose sur le logo --- */
-  gsap.from('.foot__logo', { yPercent: 40, opacity: 0, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: '.foot__word', start: 'top 95%' } });
-  gsap.from('.foot__sleep', { y: -200, rotate: -30, opacity: 0, duration: 1.6, ease: 'bounce.out', scrollTrigger: { trigger: '.foot__word', start: 'top 80%' } });
+  /* le logo du pied de page « s'imprime » : passages CMJ qui se recalent */
+  if (has('.ft__logo')) {
+    const w = q('.ft__logo .wordmark');
+    gsap.fromTo(w, { filter: 'drop-shadow(-14px -6px 0 rgba(0,160,216,.9)) drop-shadow(12px 5px 0 rgba(229,0,125,.85)) drop-shadow(-4px 10px 0 rgba(255,210,0,.9))' },
+      { filter: 'drop-shadow(0px 0px 0 rgba(0,160,216,0)) drop-shadow(0px 0px 0 rgba(229,0,125,0)) drop-shadow(0px 0px 0 rgba(255,210,0,0))', duration: 1.6, ease: 'expo.out', clearProps: 'filter',
+        scrollTrigger: { trigger: '.ft__logo', start: 'top 85%' } });
+    gsap.from('.ft__phrase > span > *', { y: 20, opacity: 0, duration: .8, stagger: .05, ease: 'expo.out', scrollTrigger: { trigger: '.ft__phrase', start: 'top 92%' } });
+  }
 
   /* --- Ruban horizontal (desktop) --- */
   const mm = gsap.matchMedia();

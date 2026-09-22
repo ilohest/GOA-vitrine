@@ -710,6 +710,67 @@ fieldset.cell > legend + * { clear: both; }
 .foot__sleep { position: absolute; width: 17%; right: 9%; top: -9%; }
 .foot__bottom { display: flex; justify-content: space-between; margin-top: 30px; color: var(--ink-2); }
 
+/* ---------- Footer : grille réglée (réf. SNACK) + ticket de caisse ---------- */
+.ft { padding: 12vh 0 0; border-top: 1px solid var(--ink); }
+.ft__grid { display: grid; grid-template-columns: 6vw repeat(3, 1fr); }
+.ft__lbl { grid-column: 1; padding: 10px 0 0 var(--gut); font-size: 10px; color: var(--ink-2); border-top: 1px solid var(--ink); }
+.ft__cell { grid-column: 2 / -1; margin: 0; border-top: 1px solid var(--ink); border-left: 1px solid var(--ink); position: relative;
+  /* filets verticaux aux tiers, comme la grille de la référence */
+  background-image: linear-gradient(var(--ink), var(--ink)), linear-gradient(var(--ink), var(--ink));
+  background-size: 1px 100%, 1px 100%; background-position: 33.333% 0, 66.666% 0; background-repeat: no-repeat; }
+/* 1× : le logo sur deux colonnes, la signature, et le menu dans la troisième */
+.ft__cell--logo { display: grid; grid-template-columns: 2fr 1fr; align-items: center; background-size: 1px 100%; background-position: 66.666% 0; background-image: linear-gradient(var(--ink), var(--ink)); }
+.ft__logo { display: block; width: 86%; justify-self: center; padding: 5vh 0 5vh; }
+.ft__logo .wordmark { display: block; width: 100%; }
+/* 2× : la phrase répartie sur la largeur */
+.ft__phrase { display: grid; grid-template-columns: repeat(3, 1fr); padding: 0; font-size: clamp(22px, 2.3vw, 34px); }
+/* un morceau de phrase par colonne : aucun filet ne coupe le texte */
+.ft__phrase > span { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 2.2vw 16px; }
+.ft__phrase em { font-style: italic; }
+/* 3× : coordonnées, une par colonne */
+.ft__info { display: grid; grid-template-columns: repeat(4, 1fr); padding: 12px 0 14px; background-image: none; }
+.ft__info a { padding: 0 1.4vw; border-left: 1px solid var(--line); }
+.ft__info a:first-child { border-left: 0; }
+.ft__info a:hover { text-decoration: underline; }
+/* 4× : le menu empilé, serré, centré */
+.ft__nav { display: flex; flex-direction: column; align-items: center; padding: 4vh 0; font-size: clamp(26px, 2.6vw, 44px); line-height: .9; letter-spacing: -.02em; }
+.ft__nav a { transition: letter-spacing .5s var(--ease); }
+.ft__nav a:hover { font-style: italic; }
+/* bas de page */
+.ft__legal { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; padding: 14px var(--gut) 18px 1.4vw; color: var(--ink-2); background-image: none; }
+.ft__legal a:hover { color: var(--ink); }
+
+/* ---------- Espace pro : bon de commande qui sort de l'en-tête comme un ticket de caisse ---------- */
+.slip-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(27,25,22,.28); opacity: 0; pointer-events: none; transition: opacity .4s var(--ease); }
+.slip-scrim.is-on { opacity: 1; pointer-events: auto; }
+.slip { position: fixed; top: 58px; right: calc(var(--gut) + 90px); z-index: 71; width: min(440px, calc(100vw - 2 * var(--gut))); pointer-events: none; }
+.slip.is-on { pointer-events: auto; }
+.slip__slot { height: 6px; margin: 0 -6px; background: #1b1916; border-radius: 3px; opacity: 0; transition: opacity .2s; }   /* la fente de la caisse */
+.slip.is-on .slip__slot { opacity: 1; }
+.slip__paper { position: relative; background: #fbf9f4; color: #1b1916; padding: 22px 24px 30px; font: 400 11px/1.6 var(--f-mono); letter-spacing: .06em;
+  clip-path: inset(0 0 100% 0);
+  /* bord inférieur déchiré, comme un ticket arraché */
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 8px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 12px 8px repeat-x;
+  mask: linear-gradient(#000 0 0) top / 100% calc(100% - 8px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 12px 8px repeat-x; }
+.slip.is-on .slip__paper { filter: drop-shadow(0 24px 30px rgba(27,25,22,.35)); }
+.slip__close { position: absolute; top: 12px; right: 14px; font: 400 18px/1 var(--f-mono); color: #1b1916; }
+.slip__head { display: flex; justify-content: space-between; padding: 0 26px 10px 0; border-bottom: 1px solid #1b1916; text-transform: uppercase; }
+.slip__meta { display: flex; justify-content: space-between; padding: 8px 0; color: rgba(27,25,22,.6); text-transform: uppercase; }
+.slip table { width: 100%; border-collapse: collapse; margin: 4px 0 12px; }
+.slip th, .slip td { text-align: left; font-weight: 400; padding: 5px 8px 5px 0; vertical-align: top; }
+.slip th { color: rgba(27,25,22,.55); border-bottom: 1px dashed rgba(27,25,22,.35); text-transform: uppercase; }
+.slip td:first-child { width: 58px; }
+.slip__total { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1b1916; padding-top: 10px; text-transform: uppercase; }
+.slip__cta { font-size: 13px; border-bottom: 1px solid currentColor; }
+.slip__cta:hover { background: #1b1916; color: #fbf9f4; }
+.slip__code { display: block; width: 180px; height: 26px; margin: 18px auto 6px;
+  background: repeating-linear-gradient(90deg, #1b1916 0 1px, transparent 1px 3px, #1b1916 3px 6px, transparent 6px 7px, #1b1916 7px 8px, transparent 8px 11px, #1b1916 11px 13px, transparent 13px 14px); }
+.slip__end { text-align: center; margin: 8px 0 0; color: rgba(27,25,22,.7); text-transform: uppercase; letter-spacing: .12em; }
+/* lien « Vous êtes pro ? » sur la fiche de contact : visible quand « Professionnel » est coché */
+.cell__pro { display: none; margin-top: 10px; font-size: 10px; border-bottom: 1px solid currentColor; width: fit-content; }
+.cell:has(input[value="pro"]:checked) .cell__pro { display: block; }
+@media (max-width: 900px) { .slip { right: var(--gut); top: 64px; } }
+
 /* ---------- Product page (image 5) ---------- */
 .pdp { position: fixed; inset: 0; z-index: 60; background: var(--paper); overflow-y: auto; clip-path: inset(100% 0 0 0); visibility: hidden; transition: clip-path 1s var(--ease-io), visibility 0s 1s; }
 .pdp.is-open { clip-path: inset(0); visibility: visible; transition: clip-path 1s var(--ease-io); }
@@ -869,7 +930,15 @@ fieldset.cell > legend + * { clear: both; }
   .pdp__media { position: relative; top: 0; height: 70vh; }
   .pdp__stage .illo { right: -6%; }
   .foot__bottom { flex-direction: column; gap: 8px; }
-  .tools { right: 0; }
+  .ft__grid { grid-template-columns: 1fr; }
+  .ft__lbl { display: none; }
+  .ft__cell { grid-column: 1; border-left: 0; background-image: none; }
+  .ft__info { grid-template-columns: 1fr 1fr; row-gap: 8px; }
+  .ft__phrase { grid-template-columns: 1fr; }
+  .ft__phrase > span { padding: 8px var(--gut); }
+  .ft__info a { border-left: 0; padding: 0 var(--gut); }
+  .ft__cell--logo { grid-template-columns: 1fr; background-image: none; }
+    .tools { right: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: .01s !important; }

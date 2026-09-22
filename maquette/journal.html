@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922134303">
+<link rel="stylesheet" href="style.css?v=20260922145050">
 </head>
 <body>
 
@@ -19,7 +19,7 @@
   <p class="hdr__mid mono" data-scramble data-en="Organic kombucha — brewed in Saint-Geniès (24)">Kombucha bio — brassé à Saint-Geniès (24)</p>
   <nav class="hdr__right">
     <div class="lang mono"><button class="is-on" data-lang="fr">FR</button><span>/</span><button data-lang="en">EN</button></div>
-    <a class="hdr__pro mono" href="#" data-scramble data-en="Pro area ↗">Espace pro ↗</a>
+    <a class="hdr__pro mono" href="#" data-pro aria-haspopup="dialog" data-scramble data-en="Pro area ↗">Espace pro ↗</a>
     <button class="hdr__menu mono" aria-expanded="false"><span data-en="Menu" data-scramble>Menu</span><i></i></button>
   </nav>
 </header>
@@ -143,20 +143,33 @@
 
 </main>
 
-<!-- ============ FOOTER ============ -->
-<footer class="foot inverse">
-  <div class="foot__top">
-    <div><p class="mono kicker">Espace pro</p><p class="display foot__big">Revendeurs, restaurants, bars :<br><a href="#" class="link" data-cursor="Go">commandez en ligne ↗</a></p></div>
-    <ul class="foot__cols mono">
-      <li><a href="index.html#gamme">La gamme</a></li><li><a href="histoire.html">Histoire</a></li><li><a href="fabrication.html">Fabrication</a></li><li><a href="points-de-vente.html">Points de vente</a></li><li><a href="journal.html">Journal</a></li>
-      <li><a href="#">Instagram</a></li><li><a href="#">Facebook</a></li><li><a href="contact.html">Contact</a></li><li><a href="#">Mentions légales</a></li>
-    </ul>
+<!-- ============ FOOTER — grille réglée + ticket (réf. SNACK / reçu) ============ -->
+<footer class="ft">
+  <div class="ft__grid">
+    <!-- 1× : le logo, signé (2 colonnes) + le menu (3e colonne) -->
+    <span class="ft__lbl mono">1×</span>
+    <div class="ft__cell ft__cell--logo">
+      <a href="index.html" class="ft__logo" aria-label="GOA — accueil"><span class="wordmark"></span></a>
+      <nav class="ft__nav display" aria-label="Pied de page">
+      <a href="index.html#gamme">La gamme</a><a href="histoire.html">Notre histoire</a><a href="fabrication.html">Fabrication</a>
+      <a href="points-de-vente.html">Points de vente</a><a href="journal.html">Journal</a><a href="contact.html">Contact</a>
+    </nav>
+    </div>
+    <!-- 2× : une phrase posée sur la grille -->
+    <span class="ft__lbl mono">2×</span>
+    <p class="ft__cell ft__phrase display"><span><span>Élixir</span><em>ancestral,</em></span><span><span>source de</span><em>bienfaits</em></span><span><span>brassé en</span><em>Périgord&nbsp;Noir</em></span></p>
+    <!-- 3× : coordonnées -->
+    <span class="ft__lbl mono">3×</span>
+    <div class="ft__cell ft__info mono">
+      <a href="#">W&nbsp;&nbsp;goa-kombucha.fr</a>
+      <a href="#">IG&nbsp;&nbsp;@goa_kombucha</a>
+      <a href="contact.html">E&nbsp;&nbsp;contact@goa-kombucha.fr</a>
+      <a href="#">FB&nbsp;&nbsp;GOA Kombucha</a>
+    </div>
+    <!-- bas de page -->
+    <span class="ft__lbl mono">—</span>
+    <div class="ft__cell ft__legal mono"><span>© 2026 La Brasserie de GOA — 24590 Saint-Geniès</span><a href="#" data-pro>Espace pro ↗</a><a href="#">Mentions légales</a><span>Design &amp; dev : Isaure Lohest</span></div>
   </div>
-  <div class="foot__word">
-    <img class="foot__logo" src="img/logo/logo-blanc.png" alt="GOA Kombucha">
-    <img class="foot__sleep persoimg" src="img/persos/se-reposer.webp" alt="">
-  </div>
-  <div class="foot__bottom mono"><span>© 2026 La Brasserie de GOA — 24590 Saint-Geniès</span><span>Design &amp; dev : Isaure Lohest</span></div>
 </footer>
 
 <!-- ============ CURSOR + MAQUETTE TOOLS ============ -->
@@ -174,6 +187,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="app.js?v=20260922133538"></script>
+<script src="app.js?v=20260922145050"></script>
 </body>
 </html>
