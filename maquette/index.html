@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922125636">
+<link rel="stylesheet" href="style.css?v=20260922134303">
 </head>
 <body>
 
@@ -135,19 +135,23 @@
     <span class="pdp__crumb">La gamme / <b></b></span>
     <button class="pdp__close" aria-label="Fermer">✕</button>
   </div>
+  <!-- navigation entre saveurs : sur les bords de la fenêtre -->
+  <button class="pdp__arrow pdp__arrow--l mono" aria-label="Saveur précédente"><span class="pdp__arr">&larr;</span><small class="pdp__prev"></small></button>
+  <button class="pdp__arrow pdp__arrow--r mono" aria-label="Saveur suivante"><small class="pdp__next"></small><span class="pdp__arr">&rarr;</span></button>
   <div class="pdp__grid">
     <div class="pdp__media">
       <span class="pdp__badge mono">Non pasteurisé</span>
       <span class="pdp__n mono">1/7</span>
-      <button class="pdp__arrow pdp__arrow--l" aria-label="Précédent">‹</button>
       <div class="pdp__stage"></div>
-      <button class="pdp__arrow pdp__arrow--r" aria-label="Suivant">›</button>
     </div>
     <div class="pdp__info">
       <h1 class="pdp__title mono"></h1>
       <p class="pdp__sub display"></p>
       <div class="pdp__variants mono"><span>Format</span><button data-v="1" class="is-on">1 L</button><button data-v="35">35 cl</button></div>
-      <a class="btn btn--dark" href="points-de-vente.html"><span>Trouver un point de vente</span><span>Trouver un point de vente</span></a>
+      <div class="pdp__cta">
+        <img class="pdp__sleep persoimg" src="img/persos/dormir.webp" alt="" aria-hidden="true">
+        <a class="btn btn--dark" href="points-de-vente.html"><span>Trouver un point de vente</span><span>Trouver un point de vente</span></a>
+      </div>
       <p class="pdp__pro mono">Professionnel ? <a href="#">Commander sur l’espace pro</a></p>
       <div class="pdp__table">
         <div><span class="mono">Thé :</span><em class="pdp__the"></em></div>
@@ -160,7 +164,7 @@
         <details><summary class="mono">Valeurs nutritionnelles (100 ml)</summary><p class="mono">Énergie 20 kcal · Glucides 4,3 g · dont sucres 4,3 g</p></details>
         <details><summary class="mono">Conservation</summary><p>Non pasteurisé : conservez entre 1 et 4 °C, même avant ouverture. Un dépôt naturel peut se former.</p></details>
       </div>
-      <figure class="pdp__label crop"><span class="cm"></span><img alt="Étiquette"><figcaption class="mono">L’étiquette — format 35 cl</figcaption></figure>
+      <figure class="pdp__label crop"><span class="cm"></span><img alt="Étiquette"></figure>
     </div>
   </div>
 </div>
@@ -180,6 +184,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="app.js?v=20260922125955"></script>
+<script src="app.js?v=20260922133538"></script>
 </body>
 </html>

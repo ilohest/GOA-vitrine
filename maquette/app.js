@@ -184,60 +184,95 @@ qa('[data-split]').forEach(el => {
 
 /* ---------------- Points de vente ---------------- */
 const STORES = [
-  { n: 'La Brasserie de GOA', v: 'Saint-Geniès', t: 'home', ll: [1.252, 45.001] },
-  { n: 'L’Épicerie du Marché', v: 'Sarlat-la-Canéda', t: 'bio', ll: [1.216, 44.889] },
-  { n: 'Biocoop Vallée', v: 'Périgueux', t: 'bio', ll: [0.721, 45.184] },
-  { n: 'Le Quai', v: 'Bergerac', t: 'bar', ll: [0.482, 44.853] },
-  { n: 'La Table de Lascaux', v: 'Montignac', t: 'resto', ll: [1.162, 45.064] },
-  { n: 'Au Panier Paysan', v: 'Brive-la-Gaillarde', t: 'bio', ll: [1.533, 45.158] },
-  { n: 'Le Comptoir', v: 'Terrasson-Lavilledieu', t: 'resto', ll: [1.301, 45.130] },
-  { n: 'Cave Chartrons', v: 'Bordeaux', t: 'bar', ll: [-0.571, 44.853] },
-  { n: 'Guinguette de la Vézère', v: 'Les Eyzies', t: 'bar', ll: [1.014, 44.936] },
-  { n: 'Épicerie Carmes', v: 'Toulouse', t: 'bio', ll: [1.444, 43.598] },
+  { n: 'La Brasserie de GOA', v: 'Saint-Geniès', cp: '24590', t: 'home', ll: [1.252, 45.001] },
+  { n: 'L’Épicerie du Marché', v: 'Sarlat-la-Canéda', cp: '24200', t: 'bio', ll: [1.216, 44.889] },
+  { n: 'Biocoop Vallée', v: 'Périgueux', cp: '24000', t: 'bio', ll: [0.721, 45.184] },
+  { n: 'Le Quai', v: 'Bergerac', cp: '24100', t: 'bar', ll: [0.482, 44.853] },
+  { n: 'La Table de Lascaux', v: 'Montignac', cp: '24290', t: 'resto', ll: [1.162, 45.064] },
+  { n: 'Au Panier Paysan', v: 'Brive-la-Gaillarde', cp: '19100', t: 'bio', ll: [1.533, 45.158] },
+  { n: 'Le Comptoir', v: 'Terrasson-Lavilledieu', cp: '24120', t: 'resto', ll: [1.301, 45.130] },
+  { n: 'Cave Chartrons', v: 'Bordeaux', cp: '33000', t: 'bar', ll: [-0.571, 44.853] },
+  { n: 'Guinguette de la Vézère', v: 'Les Eyzies', cp: '24620', t: 'bar', ll: [1.014, 44.936] },
+  { n: 'Épicerie Carmes', v: 'Toulouse', cp: '31000', t: 'bio', ll: [1.444, 43.598] },
 ];
 const TYPE = { home: 'Brasserie', bio: 'Épicerie', resto: 'Restaurant', bar: 'Bar' };
 const list = q('.stores__list');
 let map, markers = [];
 if (list) {
-list.innerHTML = STORES.map((s, i) => `<li data-t="${s.t}" data-i="${i}"><b>${s.n}</b><span>${s.v}</span><em class="mono">${TYPE[s.t]}</em></li>`).join('');
-function initMap() {
-  if (!window.maplibregl) { q('#map').innerHTML = '<p class="mono" style="padding:20px">Carte interactive (MapLibre) — chargement impossible hors ligne</p>'; return; }
-  map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/positron', center: [1.0, 44.85], zoom: 7.1, attributionControl: { compact: true }, cooperativeGestures: true });
-  map.on('load', () => {
-    const cs = getComputedStyle(document.documentElement);
-    const paper = cs.getPropertyValue('--paper-2').trim() || '#e8e3d8', ink = cs.getPropertyValue('--ink').trim();
-    map.getStyle().layers.forEach(l => {
-      try {
-        if (l.type === 'background') map.setPaintProperty(l.id, 'background-color', paper);
-        if (l.type === 'fill' && /water/.test(l.id)) map.setPaintProperty(l.id, 'fill-color', '#d9d4c8');
-        if (l.type === 'fill' && !/water/.test(l.id)) map.setPaintProperty(l.id, 'fill-opacity', 0.25);
-        if (l.type === 'line' && /road|highway|transport/.test(l.id)) map.setPaintProperty(l.id, 'line-color', '#d2ccbf');
-        if (l.type === 'line' && /boundary/.test(l.id)) map.setPaintProperty(l.id, 'line-color', '#9a9285');
-        if (l.type === 'symbol') { if (/poi|road|housenumber|transport/.test(l.id)) map.setLayoutProperty(l.id, 'visibility', 'none'); else map.setPaintProperty(l.id, 'text-color', ink); }
-      } catch (e) {}
+  const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const kmBetween = (a, b) => { const R = 6371, r = x => x * Math.PI / 180, dLa = r(b[1] - a[1]), dLo = r(b[0] - a[0]);
+    const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+  const state = { f: 'all', q: '', me: null };
+  const matches = s => {
+    if (state.f !== 'all' && s.t !== state.f && s.t !== 'home') return false;
+    const qq = norm(state.q.trim()); if (!qq) return true;
+    return /^\d+$/.test(qq) ? s.cp.startsWith(qq.slice(0, Math.max(2, qq.length))) || s.cp.startsWith(qq.slice(0, 2)) : norm(s.v + ' ' + s.n).includes(qq);
+  };
+  const render = () => {
+    let items = STORES.map((s, i) => ({ s, i, d: state.me ? kmBetween(state.me, s.ll) : null })).filter(o => matches(o.s));
+    if (state.me) items.sort((a, b) => a.d - b.d);
+    list.innerHTML = items.length
+      ? items.map(({ s, i, d }) => `<li data-i="${i}"><b>${s.n}</b><span>${s.v} (${s.cp})</span><em class="mono">${TYPE[s.t]}</em>${d != null ? `<em class="mono dist">${d < 10 ? d.toFixed(1) : Math.round(d)} km</em>` : ''}</li>`).join('')
+      : `<li class="stores__empty mono">Aucun point de vente ici pour l’instant — <a href="contact.html" class="link">écrivez-nous</a></li>`;
+    const cnt = q('.stores__count'); if (cnt) cnt.textContent = `${pad(items.length)} point${items.length > 1 ? 's' : ''} de vente`;
+    const shown = new Set(items.map(o => o.i));
+    markers.forEach((m, k) => m.getElement().style.display = shown.has(k) ? '' : 'none');
+    /* la carte se recadre sur les résultats */
+    if (map && items.length && (state.q || state.me)) {
+      const b = new maplibregl.LngLatBounds(); items.slice(0, 6).forEach(o => b.extend(o.s.ll)); if (state.me) b.extend(state.me);
+      map.fitBounds(b, { padding: 60, maxZoom: 11, duration: 900 });
+    }
+  };
+  function initMap() {
+    if (!window.maplibregl) { q('#map').innerHTML = '<p class="mono" style="padding:20px">Carte interactive (MapLibre) — chargement impossible hors ligne</p>'; return; }
+    map = new maplibregl.Map({ container: 'map', style: 'https://tiles.openfreemap.org/styles/positron', center: [1.0, 44.85], zoom: 6.6, attributionControl: { compact: true }, cooperativeGestures: true });
+    map.on('load', () => {
+      const cs = getComputedStyle(document.documentElement);
+      const paper = cs.getPropertyValue('--paper-2').trim() || '#e8e3d8', ink = '#1b1916';
+      map.getStyle().layers.forEach(l => {
+        try {
+          if (l.type === 'background') map.setPaintProperty(l.id, 'background-color', paper);
+          if (l.type === 'fill' && /water/.test(l.id)) map.setPaintProperty(l.id, 'fill-color', '#d9d4c8');
+          if (l.type === 'fill' && !/water/.test(l.id)) map.setPaintProperty(l.id, 'fill-opacity', 0.25);
+          if (l.type === 'line' && /road|highway|transport/.test(l.id)) map.setPaintProperty(l.id, 'line-color', '#d2ccbf');
+          if (l.type === 'line' && /boundary/.test(l.id)) map.setPaintProperty(l.id, 'line-color', '#9a9285');
+          if (l.type === 'symbol') { if (/poi|road|housenumber|transport/.test(l.id)) map.setLayoutProperty(l.id, 'visibility', 'none'); else map.setPaintProperty(l.id, 'text-color', ink); }
+        } catch (e) {}
+      });
     });
+    STORES.forEach((s, i) => {
+      const el = document.createElement('div'); el.className = 'pin' + (s.t === 'home' ? ' pin--home' : '');
+      const pop = new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(`<b>${s.n}</b><br><span class="mono">${s.v} — ${TYPE[s.t]}</span>`);
+      const m = new maplibregl.Marker({ element: el }).setLngLat(s.ll).setPopup(pop).addTo(map);
+      el.addEventListener('click', () => select(i, false));
+      markers.push(m);
+    });
+    /* cadrage de départ : tous les points de vente */
+    const all = new maplibregl.LngLatBounds(); STORES.forEach(s => all.extend(s.ll));
+    map.fitBounds(all, { padding: 70, duration: 0 });
+    render();
+  }
+  window.select = function select(i, fly = true) {
+    qa('li', list).forEach(li => li.classList.toggle('is-on', +li.dataset.i === i));
+    markers.forEach((m, k) => m.getElement().classList.toggle('is-on', k === i));
+    if (map && fly) { map.flyTo({ center: STORES[i].ll, zoom: 11, speed: .8, curve: 1.6 }); markers.forEach(m => m.getPopup().remove()); markers[i].togglePopup(); }
+  };
+  list.addEventListener('click', e => { const li = e.target.closest('li[data-i]'); if (li) select(+li.dataset.i); });
+  qa('.chips button', q('.spread') || document).forEach(b => b.addEventListener('click', () => {
+    qa('.chips button', b.parentElement).forEach(x => x.classList.toggle('is-on', x === b));
+    state.f = b.dataset.f; render();
+  }));
+  const input = q('.finder input');
+  if (input) { let t; input.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { state.q = input.value; render(); }, 180); }); }
+  const near = q('.finder__near');
+  if (near) near.addEventListener('click', () => {
+    if (!navigator.geolocation) return;
+    near.classList.add('is-on'); near.lastChild.textContent = 'Localisation…';
+    navigator.geolocation.getCurrentPosition(p => { state.me = [p.coords.longitude, p.coords.latitude]; near.lastChild.textContent = 'Autour de moi ✓'; render(); },
+      () => { near.lastChild.textContent = 'Position indisponible'; });
   });
-  STORES.forEach((s, i) => {
-    const el = document.createElement('div'); el.className = 'pin' + (s.t === 'home' ? ' pin--home' : '');
-    const pop = new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(`<b>${s.n}</b><br><span class="mono">${s.v} — ${TYPE[s.t]}</span>`);
-    const m = new maplibregl.Marker({ element: el }).setLngLat(s.ll).setPopup(pop).addTo(map);
-    el.addEventListener('click', () => select(i, false));
-    markers.push(m);
-  });
-}
-function select(i, fly = true) {
-  qa('li', list).forEach(li => li.classList.toggle('is-on', +li.dataset.i === i));
-  markers.forEach((m, k) => m.getElement().classList.toggle('is-on', k === i));
-  if (map && fly) { map.flyTo({ center: STORES[i].ll, zoom: 10, speed: .8, curve: 1.6 }); markers.forEach(m => m.getPopup().remove()); markers[i].togglePopup(); }
-}
-list.addEventListener('click', e => { const li = e.target.closest('li'); if (li) select(+li.dataset.i); });
-qa('.stores .chips button').forEach(b => b.addEventListener('click', () => {
-  qa('.stores .chips button').forEach(x => x.classList.toggle('is-on', x === b));
-  const f = b.dataset.f;
-  qa('li', list).forEach(li => li.style.display = (f === 'all' || li.dataset.t === f || li.dataset.t === 'home') ? '' : 'none');
-  markers.forEach((m, k) => m.getElement().style.display = (f === 'all' || STORES[k].t === f || STORES[k].t === 'home') ? '' : 'none');
-}));
-new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { initMap(); o.disconnect(); } }), { rootMargin: '400px' }).observe(q('#map'));
+  render();
+  new IntersectionObserver((es, o) => es.forEach(e => { if (e.isIntersecting) { initMap(); o.disconnect(); } }), { rootMargin: '400px' }).observe(q('#map'));
 }
 
 /* ---------------- Formulaire : fiche d'imprimerie ---------------- */
@@ -284,6 +319,8 @@ function renderPdp(dir = 0) {
   q('.pdp__title').textContent = full(p).toUpperCase();
   q('.pdp__sub').innerHTML = `Kombucha <em>${p.notes.toLowerCase()}</em>${p.isNew ? ' — nouvelle saveur' : ''}`;
   q('.pdp__n').textContent = `${cur + 1}/${P.length}`;
+  q('.pdp__prev').textContent = full(P[(cur - 1 + P.length) % P.length]);
+  q('.pdp__next').textContent = full(P[(cur + 1) % P.length]);
   q('.pdp__the').textContent = p.the;
   q('.pdp__notes').textContent = p.notes;
   q('.pdp__ingr').textContent = p.ingr;
@@ -459,8 +496,30 @@ if (folderBox) {
   addEventListener('resize', () => { const k = open, m = mode; open = -1; folderOpen(k, false, !!m); });
 }
 
+/* ---------------- Journal : filtres + aperçu qui suit le curseur ---------------- */
+const jlist = q('.jindex__list');
+if (jlist) {
+  const rows = qa('.jrow', jlist), cnt = q('.jindex__count');
+  const count = () => { const n = rows.filter(r => !r.classList.contains('is-hidden')).length; cnt.textContent = `${pad(n)} article${n > 1 ? 's' : ''}`; };
+  qa('.jindex .chips button').forEach(b => b.addEventListener('click', () => {
+    qa('.jindex .chips button').forEach(x => x.classList.toggle('is-on', x === b));
+    rows.forEach(r => r.classList.toggle('is-hidden', b.dataset.f !== 'all' && r.dataset.cat !== b.dataset.f));
+    count();
+  }));
+  count();
+  const pv = q('.jpreview'), pimg = q('img', pv);
+  let tx = 0, ty = 0, cx = 0, cy = 0, run = false;
+  const follow = () => { cx += (tx - cx) * .14; cy += (ty - cy) * .14; pv.style.left = cx + 'px'; pv.style.top = cy + 'px'; if (run) requestAnimationFrame(follow); };
+  rows.forEach(r => {
+    r.addEventListener('pointerenter', e => { pimg.src = r.dataset.img; tx = cx = e.clientX - 240; ty = cy = e.clientY; pv.classList.add('is-on'); if (!run) { run = true; follow(); } });
+    r.addEventListener('pointermove', e => { tx = e.clientX - 240; ty = e.clientY; });   // à gauche du curseur : le titre (à droite) reste lisible
+    r.addEventListener('pointerleave', () => { pv.classList.remove('is-on'); });
+  });
+  jlist.addEventListener('pointerleave', () => { run = false; });
+}
+
 /* ---------------- Hors-registre CMJ sur les titres ---------------- */
-const CMY_SEL = '.h2, .foot__big, .folder__grid span, .value h4, .step h3, .post h3, .page-hero__title, .ticket__title, .menu__list em, .hero__tag, .pdp__title';
+const CMY_SEL = '.h2, .foot__big, .jindex__title, .folder__grid span, .value h4, .step h3, .post h3, .page-hero__title, .ticket__title, .menu__list em, .hero__tag, .pdp__title';
 qa(CMY_SEL).forEach(el => el.classList.add('cmy'));
 /* décalage de départ proportionnel à la taille du texte */
 const cmyFrom = el => { const f = parseFloat(getComputedStyle(el).fontSize) * .14;
@@ -566,7 +625,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
 
   const has = s => !!q(s);
   /* --- Grands titres : les passages CMJ se recalent à l'apparition --- */
-  qa('.h2, .foot__big').forEach(el => gsap.fromTo(el, { textShadow: cmyFrom(el) }, { textShadow: CMY_ZERO, duration: 1.6, ease: 'expo.out', clearProps: 'textShadow',
+  qa('.h2, .foot__big, .jindex__title').forEach(el => gsap.fromTo(el, { textShadow: cmyFrom(el) }, { textShadow: CMY_ZERO, duration: 1.6, ease: 'expo.out', clearProps: 'textShadow',
     scrollTrigger: { trigger: el, start: 'top 85%' } }));
 
   /* --- Titres split --- */
@@ -607,7 +666,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   }
 
   /* --- Photos : parallax interne --- */
-  qa('.story__photo img, .post__img img').forEach(img => gsap.fromTo(img, { yPercent: -6 }, { yPercent: 6, ease: 'none', scrollTrigger: { trigger: img.parentElement, scrub: true } }));
+  qa('.story__photo img, .post__img img, .sheet__img img').forEach(img => gsap.fromTo(img, { yPercent: -6 }, { yPercent: 6, ease: 'none', scrollTrigger: { trigger: img.parentElement, scrub: true } }));
 
   /* --- Étapes & valeurs --- */
   if (has('.process__steps')) gsap.from('.step', { y: 24, opacity: 0, duration: 1, stagger: .08, ease: 'expo.out', scrollTrigger: { trigger: '.process__steps', start: 'top 80%' } });
@@ -638,9 +697,22 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
 
   if (has('.values')) gsap.from('.value', { y: 40, opacity: 0, duration: 1, stagger: .08, ease: 'expo.out', scrollTrigger: { trigger: '.values', start: 'top 85%' } });
   if (has('.insta__grid')) gsap.from('.insta__item', { y: 50, opacity: 0, duration: 1, stagger: .06, ease: 'expo.out', scrollTrigger: { trigger: '.insta__grid', start: 'top 85%' } });
+  qa('.sheet__fig').forEach(f => gsap.from(f, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: f, start: 'top 90%' } }));
+  if (has('.jindex__list')) gsap.from('.jrow', { y: 20, opacity: 0, duration: .9, stagger: .06, ease: 'expo.out', delay: arrived ? .5 : .2 });
   if (has('.journal__grid')) gsap.from('.post', { y: 70, opacity: 0, duration: 1.2, stagger: .1, ease: 'expo.out', scrollTrigger: { trigger: '.journal__grid', start: 'top 85%' } });
 
   /* --- Vélo de livraison qui traverse la carte --- */
+  /* --- Points de vente : le livreur traverse le bas de la fenêtre au rythme du scroll --- */
+  if (has('.rider')) {
+    const rider = q('.rider'), ink = q('.spread__ink');
+    const left = () => ink.getBoundingClientRect().left;                        // bord gauche de la colonne foncée
+    const right = () => innerWidth - rider.offsetWidth;                         // bord droit de la fenêtre
+    /* départ à droite ; il roule vers la gauche (le vélo regarde vers la gauche) */
+    gsap.fromTo(rider, { x: right }, { x: left, ease: 'none', scrollTrigger: { trigger: '.spread', start: 'top top', end: 'bottom bottom', scrub: .5, invalidateOnRefresh: true,
+      onLeave: () => rider.classList.add('is-off'), onEnterBack: () => rider.classList.remove('is-off') } });
+  }
+  if (has('.piece')) { gsap.from('.piece', { y: 40, opacity: 0, rotate: '+=30', duration: 1.2, stagger: .08, ease: 'back.out(1.6)', delay: arrived ? .6 : .3 });
+    qa('.spread__paper .piece').forEach((p, i) => gsap.to(p, { y: (i % 2 ? -1 : 1) * 40, ease: 'none', scrollTrigger: { trigger: '.spread', start: 'top top', end: 'bottom top', scrub: true } })); }
   if (has('.stores__bike')) gsap.fromTo('.stores__bike', { x: -200 }, { x: () => q('.stores__map').offsetWidth + 40, ease: 'none', scrollTrigger: { trigger: '.stores', start: 'top 70%', end: 'bottom 20%', scrub: 1.2 } });
 
   /* --- Footer : le perso se pose sur le logo --- */

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<link rel="stylesheet" href="style.css?v=20260922125636">
+<link rel="stylesheet" href="style.css?v=20260922134303">
 </head>
 <body>
 
@@ -45,22 +45,31 @@
 
 <main id="top" data-page="points-de-vente">
 
-<nav class="crumb mono" aria-label="Fil d’Ariane"><a href="index.html" data-scramble>Accueil</a><span>/</span><span data-scramble aria-current="page">Points de vente</span></nav>
-
 <!-- ============ POINTS DE VENTE ============ -->
-<section class="stores stores--first" id="points-de-vente">
-  <div class="stores__side">
+<section class="spread" id="points-de-vente">
+  <!-- colonne papier : recherche, filtres et liste -->
+  <div class="spread__paper">
+    <nav class="crumb mono" aria-label="Fil d’Ariane"><a href="index.html" data-scramble>Accueil</a><span>/</span><span data-scramble aria-current="page">Points de vente</span></nav>
     <h2 class="display h2" data-split>Où nous <em>trouver</em></h2>
+    <form class="finder" role="search" onsubmit="return false">
+      <label class="finder__field"><span class="mono">Code postal ou ville</span>
+        <input type="search" inputmode="search" autocomplete="postal-code" placeholder="ex. 24200, Sarlat…" aria-label="Rechercher un point de vente par code postal ou ville"></label>
+      <button type="button" class="finder__near mono"><i></i>Autour de moi</button>
+    </form>
     <div class="chips mono">
       <button class="is-on" data-f="all">Tous</button><button data-f="bio">Épiceries</button><button data-f="resto">Restaurants</button><button data-f="bar">Bars</button>
     </div>
-    <ul class="stores__list" data-lenis-prevent></ul>
+    <p class="mono stores__count" aria-live="polite"></p>
+    <ul class="stores__list"></ul>
     <p class="mono stores__note">* Données fictives, pour la maquette</p>
   </div>
-  <div class="stores__map crop"><span class="cm"></span>
-    <div id="map"></div>
-    <img class="stores__bike persoimg" src="img/persos/livraison.webp" alt="" loading="lazy">
+  <!-- colonne encre : la carte, fixe pendant qu'on parcourt la liste -->
+  <div class="spread__ink inverse">
+    <div class="spread__map crop"><span class="cm"></span><div id="map"></div>
+    </div>
   </div>
+  <!-- le livreur roule en bas de la fenêtre au fil du scroll -->
+  <img class="rider" src="img/persos/livraison.webp" alt="" aria-hidden="true">
 </section>
 
 </main>
@@ -97,6 +106,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="app.js?v=20260922125955"></script>
+<script src="app.js?v=20260922133538"></script>
 </body>
 </html>
