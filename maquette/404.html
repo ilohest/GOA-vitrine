@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page introuvable — GOA Kombucha</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/logo/goa-rond.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=20260924000604">
+<style>
+  /* ---------- 404 — affiche typographique ----------
+     Chaque ligne contient trois fois le mot. Un seul (ou deux, en transition)
+     s'étire sur la place restante ; la position de l'étirement glisse d'une
+     ligne à l'autre, ce qui dessine la diagonale de l'affiche. */
+  html, body { height: 100%; }
+  body { display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
+
+  .e404__hdr { display: flex; justify-content: space-between; align-items: center; padding: 18px var(--gut); }
+  .e404__hdr .wordmark--sm { background: var(--ink); }
+  .e404__hdr a:last-child { border-bottom: 1px solid currentColor; padding-bottom: 2px; transition: opacity .3s; }
+  .e404__hdr a:last-child:hover { opacity: .55; }
+
+  .poster {
+    min-height: 0; padding: 0 var(--gut); overflow: hidden;
+    display: flex; flex-direction: column; justify-content: space-between;
+    font: 400 var(--fs, 28px)/1 var(--f-display); letter-spacing: 0; text-transform: uppercase;
+    user-select: none;
+  }
+  .poster__row { display: flex; gap: .32em; white-space: nowrap; }
+  .poster__w { display: flex; justify-content: space-between; flex: 0 0 auto; }
+
+  .e404__foot {
+    display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 12px 32px; align-items: end;
+    padding: 20px var(--gut) 22px; border-top: 1px solid var(--line); margin-top: 14px;
+  }
+  .e404__foot b { display: block; font: 700 15px/1.2 var(--f-sans); letter-spacing: .01em; }
+  .e404__foot i { font: italic 22px/1.1 var(--f-display); }
+  .e404__foot p { margin: 0; }
+  .e404__foot .mono { color: var(--ink-2); }
+  .e404__cta { font: 600 15px/1.2 var(--f-sans); border-bottom: 1px solid currentColor; padding-bottom: 2px; justify-self: end; transition: opacity .3s; }
+  .e404__cta:hover { opacity: .55; }
+  @media (max-width: 640px) {
+    .e404__foot { grid-template-columns: 1fr auto; }
+    .e404__foot > :nth-child(2) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="e404__hdr mono">
+  <a href="index.html" aria-label="GOA — accueil"><span class="wordmark wordmark--sm"></span></a>
+  <a href="index.html">Retour à l’accueil ↗</a>
+</header>
+
+<main class="poster" aria-hidden="true" data-word="PERDU"></main>
+
+<footer class="e404__foot">
+  <div>
+    <b>Erreur 404</b>
+    <i>Cette page s’est évaporée.</i>
+  </div>
+  <p class="mono">Elle a peut-être fermenté un peu trop longtemps,<br>ou changé d’adresse sans prévenir.</p>
+  <a class="e404__cta" href="index.html">Revenir à l’accueil →</a>
+</footer>
+
+<script>
+(() => {
+  const poster = document.querySelector('.poster');
+  const WORD = poster.dataset.word;
+  const N = 3;                                   // mots par ligne
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let rows = [];
+
+  const wordEl = () => {
+    const w = document.createElement('span');
+    w.className = 'poster__w';
+    w.innerHTML = [...WORD].map(c => `<span>${c}</span>`).join('');
+    return w;
+  };
+
+  function build() {
+    const W = poster.clientWidth - 2 * parseFloat(getComputedStyle(poster).paddingLeft);
+    const H = poster.clientHeight;
+    // Taille : 3 mots serrés doivent laisser ~45 % de place libre à l'étirement
+    const fs = Math.max(13, Math.min(W / (WORD.length * 3 * 1.0), 56));
+    poster.style.setProperty('--fs', fs + 'px');
+    const count = Math.max(6, Math.floor(H / (fs * 1.12)));
+    poster.innerHTML = '';
+    rows = [];
+    for (let r = 0; r < count; r++) {
+      const row = document.createElement('div');
+      row.className = 'poster__row';
+      const ws = Array.from({ length: N }, wordEl);
+      row.append(...ws);
+      poster.appendChild(row);
+      rows.push(ws);
+    }
+  }
+
+  // Position de l'étirement pour une ligne : va-et-vient entre le 1er et le dernier mot.
+  // La phase décale chaque ligne → la vague descend l'affiche.
+  const smooth = x => x * x * (3 - 2 * x);
+  function frame(t) {
+    const sec = t / 1000;
+    rows.forEach((ws, r) => {
+      const s = (N - 1) * (0.5 - 0.5 * Math.cos(sec * 0.55 - r * 0.28));   // 0 → N-1
+      let g = ws.map((_, i) => smooth(Math.max(0, 1 - Math.abs(s - i))));
+      const sum = g.reduce((a, b) => a + b, 0) || 1;
+      ws.forEach((w, i) => { w.style.flexGrow = (g[i] / sum).toFixed(4); });
+    });
+    if (!reduced) requestAnimationFrame(frame);
+  }
+
+  let rz;
+  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { build(); if (reduced) frame(0); }, 120); });
+  document.fonts.ready.then(() => { build(); requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

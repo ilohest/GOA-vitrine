@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260922145050">
+<link rel="stylesheet" href="style.css?v=20260924000604">
 </head>
 <body>
 
@@ -28,12 +28,12 @@
 <div class="menu" aria-hidden="true">
   <div class="menu__inner">
     <ol class="menu__list">
-      <li><a href="index.html#gamme"><span class="mono">01</span><em data-en="Our range">La gamme</em></a></li>
-      <li><a href="histoire.html" aria-current="page"><span class="mono">02</span><em data-en="Our story">Notre histoire</em></a></li>
-      <li><a href="fabrication.html"><span class="mono">03</span><em data-en="How it's made">La fabrication</em></a></li>
-      <li><a href="points-de-vente.html"><span class="mono">04</span><em data-en="Where to buy">Points de vente</em></a></li>
-      <li><a href="journal.html"><span class="mono">05</span><em data-en="Journal">Journal</em></a></li>
-      <li><a href="contact.html"><span class="mono">06</span><em data-en="FAQ & contact">FAQ &amp; contact</em></a></li>
+      <li><a href="index.html#gamme"><em data-en="Our range">La gamme</em></a></li>
+      <li><a href="histoire.html" aria-current="page"><em data-en="Our story">Notre histoire</em></a></li>
+      <li><a href="fabrication.html"><em data-en="How it's made">La fabrication</em></a></li>
+      <li><a href="points-de-vente.html"><em data-en="Where to buy">Points de vente</em></a></li>
+      <li><a href="journal.html"><em data-en="Journal">Journal</em></a></li>
+      <li><a href="contact.html"><em data-en="FAQ & contact">FAQ &amp; contact</em></a></li>
     </ol>
     <div class="menu__side">
       <div class="stopmo menu__perso" data-frames="tenir-haut,tenir-haut-2,tenir-hat-2" data-fps="4"></div>
@@ -119,7 +119,7 @@
 <!-- ============ ETIQUETTES ============ -->
 <section class="labels">
   <div class="labels__head">
-    <p class="mono kicker">(02b) — <span data-en="The labels">Les étiquettes</span></p>
+    <p class="mono kicker"><span data-en="The labels">Les étiquettes</span></p>
   </div>
   <div class="marquee marquee--labels" data-speed="0.5"><div class="marquee__track"></div></div>
   <div class="marquee marquee--labels marquee--rev" data-speed="-0.4"><div class="marquee__track"></div></div>
@@ -131,7 +131,7 @@
 <footer class="ft">
   <div class="ft__grid">
     <!-- 1× : le logo, signé (2 colonnes) + le menu (3e colonne) -->
-    <span class="ft__lbl mono">1×</span>
+    <span class="ft__lbl" aria-hidden="true"></span>
     <div class="ft__cell ft__cell--logo">
       <a href="index.html" class="ft__logo" aria-label="GOA — accueil"><span class="wordmark"></span></a>
       <nav class="ft__nav display" aria-label="Pied de page">
@@ -140,10 +140,10 @@
     </nav>
     </div>
     <!-- 2× : une phrase posée sur la grille -->
-    <span class="ft__lbl mono">2×</span>
+    <span class="ft__lbl" aria-hidden="true"></span>
     <p class="ft__cell ft__phrase display"><span><span>Élixir</span><em>ancestral,</em></span><span><span>source de</span><em>bienfaits</em></span><span><span>brassé en</span><em>Périgord&nbsp;Noir</em></span></p>
     <!-- 3× : coordonnées -->
-    <span class="ft__lbl mono">3×</span>
+    <span class="ft__lbl" aria-hidden="true"></span>
     <div class="ft__cell ft__info mono">
       <a href="#">W&nbsp;&nbsp;goa-kombucha.fr</a>
       <a href="#">IG&nbsp;&nbsp;@goa_kombucha</a>
@@ -151,7 +151,7 @@
       <a href="#">FB&nbsp;&nbsp;GOA Kombucha</a>
     </div>
     <!-- bas de page -->
-    <span class="ft__lbl mono">—</span>
+    <span class="ft__lbl" aria-hidden="true"></span>
     <div class="ft__cell ft__legal mono"><span>© 2026 La Brasserie de GOA — 24590 Saint-Geniès</span><a href="#" data-pro>Espace pro ↗</a><a href="#">Mentions légales</a><a href="https://isaure-lohest.com/" target="_blank" rel="noopener">Website by Isaure</a></div>
   </div>
 </footer>
@@ -159,18 +159,10 @@
 <!-- ============ CURSOR + MAQUETTE TOOLS ============ -->
 <div class="cursor" aria-hidden="true"><span></span></div>
 
-<aside class="tools mono">
-  <button class="tools__toggle">Maquette ⚙</button>
-  <div class="tools__body">
-    <p>Fond</p>
-    <label><input type="radio" name="theme" value="light" checked> Blanc cassé</label>
-    <label><input type="radio" name="theme" value="dark"> Noir cassé</label>
-  </div>
-</aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-<script src="app.js?v=20260922145050"></script>
+<script src="app.js?v=20260924000604"></script>
 </body>
 </html>

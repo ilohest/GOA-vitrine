@@ -124,25 +124,25 @@ function scrambleAll() {
 /* ---------------- Ruban : panneaux saveurs ---------------- */
 const track = q('.ribbon__track');
 if (track) P.forEach((p, i) => {
+  /* saveur sans photo de bouteille : cadre laissé vide */
   const visual = p.bottle
     ? `<div class="frame__in"><img class="frame__photo" src="img/produits/${p.bottle}1.webp" alt="GOA ${full(p)} 1 L" loading="lazy"></div>`
-    : `<div class="frame__in"><img class="frame__label" src="img/etiquettes/${p.id}.webp" alt="Étiquette ${full(p)}" loading="lazy"></div><p class="frame__todo mono">Photo bouteille à venir</p>`;
+    : '<div class="frame__in"></div>';
   track.insertAdjacentHTML('beforeend', `
   <article class="panel flavor" style="--c:${p.c}" data-i="${i}">
-    <div class="flavor__meta mono"><span>${pad(i + 1)} / ${pad(P.length)}</span><span>Kombucha du Périgord</span><span class="new">${p.isNew ? '✺ Nouvelle saveur' : 'Bio — non pasteurisé'}</span></div>
+    <div class="flavor__meta mono"><span>${pad(i + 1)} / ${pad(P.length)}</span>${p.isNew ? '<span class="new">✺ Nouvelle saveur</span>' : ''}</div>
     <div class="flavor__text">
       <h3 class="flavor__name display"><span>${p.a}</span><em>${p.b}</em></h3>
       <table class="spec mono">
-        <tr><td colspan="2"><b>GOA — ${full(p)}</b></td><td>1 L · 35 cl</td></tr>
         <tr><td>Thé : <b>${p.the}</b></td><td>Notes : <b>${p.notes}</b></td><td>Sucres : <b>4,3 g</b></td></tr>
+        <tr><td colspan="3">Format : <b>1 L · 35 cl</b></td></tr>
       </table>
       <p class="flavor__desc">${p.desc}</p>
       <a class="link mono" data-open="${i}" data-cursor="Voir">Découvrir la saveur →</a>
     </div>
     <div class="flavor__visual">
       <div class="illo illo--a" style="--m:url(img/${p.f[0]}.webp)"></div>
-      <div class="frame crop" data-open="${i}" data-cursor="Voir"><span class="cm"></span>${visual}
-        <div class="frame__dots">${P.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div></div>
+      <div class="frame crop" data-open="${i}" data-cursor="Voir"><span class="cm"></span>${visual}</div>
       <div class="illo illo--b" style="--m:url(img/${p.f[1]}.webp)"></div>
     </div>
   </article>`);
@@ -249,7 +249,7 @@ if (list) {
     });
     /* cadrage de départ : tous les points de vente */
     const all = new maplibregl.LngLatBounds(); STORES.forEach(s => all.extend(s.ll));
-    map.fitBounds(all, { padding: 70, duration: 0 });
+    map.fitBounds(all, { padding: 70, maxZoom: 6.2, duration: 0 });   /* un cran plus large que le cadrage serré */
     render();
   }
   window.select = function select(i, fly = true) {
@@ -340,7 +340,7 @@ function closePdp() { pdp.classList.remove('is-open'); pdp.setAttribute('aria-hi
 if (pdp) {
 document.addEventListener('click', e => { const o = e.target.closest('[data-open]'); if (o) { e.preventDefault(); openPdp(+o.dataset.open); } });
 q('.pdp__close').onclick = q('.pdp__back').onclick = closePdp;
-q('.pdp .btn--dark').addEventListener('click', e => { e.preventDefault(); closePdp(); setTimeout(() => go('points-de-vente.html', 'Points de vente'), 400); });
+q('.pdp .btn--dark').addEventListener('click', e => { e.preventDefault(); closePdp(); setTimeout(() => go('points-de-vente.html'), 400); });
 q('.pdp__arrow--l').onclick = () => { cur = (cur - 1 + P.length) % P.length; renderPdp(-1); };
 q('.pdp__arrow--r').onclick = () => { cur = (cur + 1) % P.length; renderPdp(1); };
 qa('.pdp__variants button').forEach(b => b.onclick = () => { fmt = b.dataset.v; qa('.pdp__variants button').forEach(x => x.classList.toggle('is-on', x === b)); renderPdp(0); });
@@ -349,41 +349,64 @@ addEventListener('keydown', e => { if (!pdp.classList.contains('is-open')) retur
 
 /* ---------------- Menu ---------------- */
 const menuBtn = q('.hdr__menu'), menu = q('.menu');
-const toggleMenu = (open = !menu.classList.contains('is-open')) => { menu.classList.toggle('is-open', open); menuBtn.setAttribute('aria-expanded', open); menu.setAttribute('aria-hidden', !open); open ? lenis?.stop() : lenis?.start(); };
+let menuReady = null;
+const toggleMenu = (open = !menu.classList.contains('is-open')) => {
+  menu.classList.toggle('is-open', open); menuBtn.setAttribute('aria-expanded', open); menu.setAttribute('aria-hidden', !open);
+  /* le masque des li n'est utile que pendant le glissé : ensuite on le lève pour ne pas rogner les jambages */
+  clearTimeout(menuReady); menu.classList.remove('is-ready');
+  if (open) menuReady = setTimeout(() => menu.classList.add('is-ready'), 750);
+  open ? lenis?.stop() : lenis?.start();
+};
 menuBtn.onclick = () => toggleMenu();
+
+/* défilement bloqué : la barre reste visible (voir style.css), on neutralise les touches
+   qui feraient quand même défiler la page derrière l'overlay */
+const SCROLL_KEYS = new Set([' ', 'Spacebar', 'PageDown', 'PageUp', 'End', 'Home', 'ArrowDown', 'ArrowUp']);
+addEventListener('keydown', e => {
+  if (!document.documentElement.classList.contains('lenis-stopped')) return;
+  const t = e.target;
+  /* on laisse passer tout ce qui s'active au clavier : Espace et flèches y ont un sens */
+  if (t instanceof Element && t.closest('button, a[href], summary, input, textarea, select, [contenteditable], [data-lenis-prevent]')) return;
+  if (SCROLL_KEYS.has(e.key)) e.preventDefault();
+}, { passive: false });
 qa('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
   const id = a.getAttribute('href'); if (id.length < 2) return; const t = q(id); if (!t) return;
   e.preventDefault(); if (menu.classList.contains('is-open')) toggleMenu(false);
   lenis ? lenis.scrollTo(t, { duration: 1.6 }) : t.scrollIntoView({ behavior: 'smooth' });
 }));
 
-/* ---------------- Transitions entre pages : rideau papier ---------------- */
-const wipe = document.createElement('div');
-wipe.className = 'wipe'; wipe.setAttribute('aria-hidden', 'true');
-wipe.innerHTML = '<div class="wipe__sheet crop is-in"><span class="cm"></span><span class="mono wipe__label"></span></div>';
-document.body.appendChild(wipe);
+/* ---------------- Transitions entre pages ----------------
+   Un seul geste : le fondu est joué par le navigateur (View Transitions, voir style.css).
+   Le rôle du script se limite à noter qu'on vient d'une autre page, pour que la page
+   d'arrivée s'affiche déjà composée au lieu de rejouer ses animations d'entrée. */
 let arrived = false;
-try { arrived = sessionStorage.getItem('goa-wipe') === '1'; sessionStorage.removeItem('goa-wipe'); } catch (e) {}
-if (arrived && !reduced) wipe.classList.add('is-cover');   // on arrive d'une autre page : le rideau est encore baissé
-function go(href, label = '') {
-  if (reduced || !window.gsap) { location.href = href; return; }
-  try { sessionStorage.setItem('goa-wipe', '1'); } catch (e) {}
-  const lbl = q('.wipe__label', wipe); lbl.textContent = label;
-  if (label) scramble(lbl, label, 12, 30);
-  gsap.fromTo(wipe, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: .6, ease: 'expo.inOut', onComplete: () => location.href = href });
+try { arrived = sessionStorage.getItem('goa-nav') === '1'; sessionStorage.removeItem('goa-nav'); } catch (e) {}
+const markNav = () => { try { sessionStorage.setItem('goa-nav', '1'); } catch (e) {} };
+
+/* la page visée est mise en cache dès le survol : au clic, il ne reste plus qu'à l'afficher */
+const prefetched = new Set([location.pathname]);
+function prefetch(href) {
+  const u = new URL(href, location.href);
+  if (u.origin !== location.origin || prefetched.has(u.pathname)) return;
+  prefetched.add(u.pathname);
+  const l = document.createElement('link'); l.rel = 'prefetch'; l.href = u.href; document.head.appendChild(l);
 }
+['pointerover', 'touchstart', 'focusin'].forEach(ev => document.addEventListener(ev, e => {
+  const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+  if (a && /\.html$/.test(a.pathname || '')) prefetch(a.href);
+}, { passive: true, capture: true }));
+function go(href) { markNav(); location.href = href; }
+/* le lien part normalement : on note seulement le passage d'une page à l'autre */
 document.addEventListener('click', e => {
-  const a = e.target.closest('a[href]');
+  const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
   if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || a.target === '_blank') return;
   const url = new URL(a.href, location.href);
   if (url.origin !== location.origin || !/\.html$|\/$/.test(url.pathname)) return;
   if (url.pathname === location.pathname) return;   // même page (ancre) : géré par le défilement doux
-  e.preventDefault();
-  if (menu.classList.contains('is-open')) toggleMenu(false);
-  go(url.href, (a.textContent || '').trim().replace(/\s+/g, ' ').replace(/^\d+\s*/, ''));
+  markNav();
 });
-/* retour arrière du navigateur (cache) : on s'assure que le rideau est levé */
-addEventListener('pageshow', e => { if (e.persisted) { wipe.classList.remove('is-cover'); if (window.gsap) gsap.set(wipe, { clearProps: 'clipPath' }); } });
+/* retour arrière du navigateur (cache) : le menu ne doit pas réapparaître ouvert */
+addEventListener('pageshow', e => { if (e.persisted && menu.classList.contains('is-open')) toggleMenu(false); });
 
 /* ---------------- Espace pro : le bon de commande sort de l'en-tête ---------------- */
 const slipScrim = document.createElement('div'); slipScrim.className = 'slip-scrim';
@@ -422,12 +445,37 @@ slipScrim.addEventListener('click', slipClose);
 q('.slip__close', slip).addEventListener('click', slipClose);
 addEventListener('keydown', e => { if (e.key === 'Escape' && slip.classList.contains('is-on')) slipClose(); });
 
-/* ---------------- Outils maquette ---------------- */
-q('.tools__toggle').onclick = () => q('.tools').classList.toggle('is-open');
-qa('.tools input').forEach(i => i.addEventListener('change', () => {
-  document.documentElement.dataset.theme = i.value;
-  if (window.ScrollTrigger) setTimeout(() => ScrollTrigger.refresh(), 300);
-}));
+/* ---------------- FAQ : une seule question ouverte, ouverture animée ---------------- */
+const faqs = qa('.faq details');
+if (faqs.length) {
+  const DUR = 260, EASE = 'cubic-bezier(.22, 1, .36, 1)';
+  const body = d => q('.faq__body', d);
+  const openFaq = d => {
+    d.open = true;
+    if (reduced) return;
+    const b = body(d);
+    b.animate([{ height: 0, opacity: 0 }, { height: b.scrollHeight + 'px', opacity: 1 }], { duration: DUR, easing: EASE });
+  };
+  const closeFaq = d => {
+    if (reduced) { d.open = false; return; }
+    const b = body(d);
+    const a = b.animate([{ height: b.scrollHeight + 'px', opacity: 1 }, { height: 0, opacity: 0 }], { duration: DUR, easing: EASE });
+    a.onfinish = () => { d.open = false; };
+  };
+  faqs.forEach(d => {
+    /* le contenu est regroupé pour pouvoir animer sa hauteur */
+    const sum = q('summary', d), wrap = document.createElement('div');
+    wrap.className = 'faq__body';
+    [...d.children].filter(c => c !== sum).forEach(c => wrap.appendChild(c));
+    d.appendChild(wrap);
+    sum.addEventListener('click', e => {
+      e.preventDefault();
+      if (d.open) { closeFaq(d); return; }
+      faqs.forEach(o => { if (o !== d && o.open) closeFaq(o); });   // une seule ouverte à la fois
+      openFaq(d);
+    });
+  });
+}
 
 /* ---------------- Curseur ---------------- */
 const cursor = q('.cursor');
@@ -582,31 +630,37 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
     lenis.stop();
   }
 
-  /* le rideau se lève si on arrive d'une autre page */
-  const lift = tl => { if (arrived) tl.to(wipe, { clipPath: 'inset(0 0 100% 0)', duration: .8, ease: 'expo.inOut', onComplete: () => wipe.classList.remove('is-cover') }, 0); };
-
+  /* Arrivée depuis une autre page : la page s'affiche déjà composée, le fondu du navigateur
+     est le seul mouvement. Les animations d'entrée sont réservées au premier chargement. */
   if (!stage) {
-    /* --- Pages intérieures : le titre « s'imprime » (passages CMJ qui se recalent) --- */
+    /* --- Pages intérieures --- */
+    if (arrived) { q('.page-hero__sheet')?.classList.add('is-in'); lenis && lenis.start(); }
+    else {
+    /* premier chargement : le titre « s'imprime » (passages CMJ qui se recalent) */
     const t = gsap.timeline({ onComplete: () => lenis && lenis.start() });
-    lift(t);
     const hasHead = !!q('.page-hero');
     if (!hasHead) {
       /* page sans en-tête (Histoire) : juste le fil d'Ariane et le contenu */
-      t.from('.crumb, .hdr > *', { y: 14, opacity: 0, duration: .9, stagger: .05, ease: 'expo.out', clearProps: 'transform,opacity' }, arrived ? .35 : .05)
+      t.from('.crumb, .hdr > *', { y: 14, opacity: 0, duration: .7, stagger: .04, ease: 'expo.out', clearProps: 'transform,opacity' }, .05)
         .add(() => scrambleAll(), '<');
     } else
-    t.add(() => q('.page-hero__sheet')?.classList.add('is-in'), arrived ? .35 : 0)
+    t.add(() => q('.page-hero__sheet')?.classList.add('is-in'), 0)
       .fromTo('.page-hero__title', { textShadow: () => cmyFrom(q('.page-hero__title')), opacity: 0 },
-        { textShadow: CMY_ZERO, opacity: 1, duration: 1.5, ease: 'expo.out', clearProps: 'textShadow' }, arrived ? .35 : .05)
-      .from('.page-hero .reg', { rotate: -180, scale: 0, duration: 1.2, ease: 'expo.out' }, '<')
-      .from('.crumb, .page-hero__lead, .page-hero__perso, .page-hero .hero__scroll, .hdr > *', { y: 20, opacity: 0, duration: 1, stagger: .05, ease: 'expo.out', clearProps: 'transform,opacity' }, '<+.3')
+        { textShadow: CMY_ZERO, opacity: 1, duration: .9, ease: 'expo.out', clearProps: 'textShadow' }, .05)
+      .from('.page-hero .reg', { rotate: -180, scale: 0, duration: .8, ease: 'expo.out' }, '<')
+      .from('.crumb, .page-hero__lead, .page-hero__perso, .page-hero .hero__scroll, .hdr > *', { y: 20, opacity: 0, duration: .7, stagger: .04, ease: 'expo.out', clearProps: 'transform,opacity' }, '<+.16')
       .add(() => scrambleAll(), '<');
+    }
+  } else if (arrived) {
+    /* --- Accueil, en revenant d'une autre page : hero déjà en place --- */
+    q('.loader').classList.add('is-done');
+    heroStart();
+    lenis && lenis.start();
   } else {
-  /* --- Accueil : loader → hero (plus court si on revient d'une autre page) --- */
+  /* --- Accueil, premier chargement : loader → hero --- */
   const num = q('.loader__num'); const o = { v: 0 };
   const intro = gsap.timeline({ onComplete: () => { lenis && lenis.start(); } });
-  if (arrived) { q('.loader').classList.add('is-done'); lift(intro); }
-  else intro.set('.loader__frame', { className: 'loader__frame crop is-in' })
+  intro.set('.loader__frame', { className: 'loader__frame crop is-in' })
     .to(o, { v: 100, duration: 1.3, ease: 'power2.inOut', onUpdate: () => num.textContent = String(Math.round(o.v)).padStart(3, '0') })
     .to('.loader', { clipPath: 'inset(0 0 100% 0)', duration: .9, ease: 'expo.inOut' })
     .set('.loader', { className: 'loader is-done' });
@@ -621,7 +675,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
     .to('.hero__ghost', { opacity: 0, duration: .6, clearProps: 'opacity' }, 'print+=1')
     .from('.reg', { rotate: -180, scale: 0, duration: 1.2, ease: 'expo.out' }, 'print')
     .from('.hero__p, .hero__sun', { y: 16, opacity: 0, duration: 1.4, stagger: .2, ease: 'power2.out' }, 'print+=1')
-    .from('.hero__menu a, .hero__tag, .hero__scroll, .hero__gamme, .hdr > :not(.hdr__logo)', { y: 24, opacity: 0, duration: 1, stagger: .05, ease: 'expo.out', clearProps: 'transform,opacity' }, 'print+=.4')
+    .from('.hero__menu a, .hero__tag, .hero__scroll, .hero__gamme, .hdr > :not(.hdr__logo)', { opacity: 0, duration: .5, stagger: .04, ease: 'power1.out', clearProps: 'opacity' }, 'print+=.4')   /* pas de montée : les lettres se composent à leur place définitive */
     .add(() => scrambleAll(), 'print+=.4');
 
   /* --- Hero parallax au scroll --- */
@@ -642,6 +696,12 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   /* trajectoire en ligne droite dans l'écran : on interpole la position *visible*,
      puis on ajoute le scroll parcouru pour annuler le défilement de la page */
   const flyEls = qa('.hero__word, .hero__ghost'), flyEase = gsap.parseEase('power2.inOut');
+  /* Sur le hero, le bouton Menu est masqué : langues et Espace pro occupent sa place,
+     puis reviennent doucement vers la gauche pour la lui rendre quand il apparaît. */
+  const menuBtn2 = q('.hdr__menu');
+  const shiftMax = () => menuBtn2.offsetWidth + parseFloat(getComputedStyle(q('.hdr__right')).columnGap || 28);
+  const setShift = k => hdr.style.setProperty('--hdr-shift', ((1 - k) * shiftMax()).toFixed(1) + 'px');
+  setShift(0);
   gsap.set(flyEls, { transformOrigin: '0 0' });
   ScrollTrigger.create({
     trigger: '.hero', start: 'top top', end: () => '+=' + flyDist(), invalidateOnRefresh: true,
@@ -650,13 +710,14 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
       measure();   // positions relues à chaque image : rien ne dérive si la mise en page bouge
       const p = st.progress, k = flyEase(p), sc = st.scroll() - st.start;
       gsap.set(flyEls, { x: (T.left - S.x) * k, y: (T.top - S.y) * k + sc, scale: 1 + (T.width / S.w - 1) * k });
+      setShift(k);
       hdr.classList.toggle('has-logo', p > .995);
     },
-    onLeave: () => { measure(); gsap.set(flyEls, { x: T.left - S.x, y: T.top - S.y + flyDist(), scale: T.width / S.w }); hdr.classList.add('has-logo'); },
-    onEnterBack: () => hdr.classList.remove('has-logo'),
+    onLeave: () => { measure(); gsap.set(flyEls, { x: T.left - S.x, y: T.top - S.y + flyDist(), scale: T.width / S.w }); setShift(1); hdr.classList.add('has-logo'); },
+    onEnterBack: () => { setShift(0); hdr.classList.remove('has-logo'); },
   });
-  /* le reste de la planche s'efface pendant que le logo monte */
-  gsap.to('.hero__stage > .cm, .p-dance, .hero .reg', { opacity: 0, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: () => '+=' + flyDist() * .5, scrub: true } });
+  /* les traits de coupe et le tampon s'effacent pendant que le logo monte — le danseur, lui, reste */
+  gsap.to('.hero__stage > .cm, .hero .reg', { opacity: 0, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: () => '+=' + flyDist() * .5, scrub: true } });
   }
   /* au scroll, les ingrédients s'envolent et les bonshommes décollent */
 
@@ -672,7 +733,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   qa('[data-scrub-words]').forEach(el => {
     if (el.closest('.story--first')) {
       /* texte d'ouverture (Histoire) : il s'encre mot à mot dès l'arrivée */
-      gsap.to(qa('.w', el), { opacity: 1, duration: .5, stagger: .045, ease: 'power1.out', delay: arrived ? .7 : .35 });
+      gsap.to(qa('.w', el), { opacity: 1, duration: .5, stagger: .045, ease: 'power1.out', delay: arrived ? .5 : .35 });
     } else gsap.to(qa('.w', el), { opacity: 1, stagger: .1, ease: 'none', scrollTrigger: { trigger: el, start: 'top 75%', end: 'bottom 45%', scrub: true } });
   });
 
@@ -683,7 +744,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
 
   /* --- Fabrication : un point parcourt le trait gris et l'encre ; le bonhomme le suit --- */
   if (has('.fab')) {
-    gsap.timeline({ delay: arrived ? .6 : .2 })
+    gsap.timeline({ delay: arrived ? .4 : .2 })
       .from('.fab__line', { scaleX: 0, duration: 1.2, ease: 'expo.inOut' })
       .from('.fab__dot', { scale: 0, duration: .5, ease: 'back.out(3)' }, '-=.3')
       .from('.fab__guy', { y: -60, opacity: 0, duration: .9, ease: 'bounce.out' }, '-=.2')
@@ -735,7 +796,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   if (has('.values')) gsap.from('.value', { y: 40, opacity: 0, duration: 1, stagger: .08, ease: 'expo.out', scrollTrigger: { trigger: '.values', start: 'top 85%' } });
   if (has('.insta__grid')) gsap.from('.insta__item', { y: 50, opacity: 0, duration: 1, stagger: .06, ease: 'expo.out', scrollTrigger: { trigger: '.insta__grid', start: 'top 85%' } });
   qa('.sheet__fig').forEach(f => gsap.from(f, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: f, start: 'top 90%' } }));
-  if (has('.jindex__list')) gsap.from('.jrow', { y: 20, opacity: 0, duration: .9, stagger: .06, ease: 'expo.out', delay: arrived ? .5 : .2 });
+  if (has('.jindex__list')) gsap.from('.jrow', { y: 20, opacity: 0, duration: .9, stagger: .06, ease: 'expo.out', delay: arrived ? .35 : .2 });
   if (has('.journal__grid')) gsap.from('.post', { y: 70, opacity: 0, duration: 1.2, stagger: .1, ease: 'expo.out', scrollTrigger: { trigger: '.journal__grid', start: 'top 85%' } });
 
   /* --- Vélo de livraison qui traverse la carte --- */
@@ -748,7 +809,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
     gsap.fromTo(rider, { x: right }, { x: left, ease: 'none', scrollTrigger: { trigger: '.spread', start: 'top top', end: 'bottom bottom', scrub: .5, invalidateOnRefresh: true,
       onLeave: () => rider.classList.add('is-off'), onEnterBack: () => rider.classList.remove('is-off') } });
   }
-  if (has('.piece')) { gsap.from('.piece', { y: 40, opacity: 0, rotate: '+=30', duration: 1.2, stagger: .08, ease: 'back.out(1.6)', delay: arrived ? .6 : .3 });
+  if (has('.piece')) { gsap.from('.piece', { y: 40, opacity: 0, rotate: '+=30', duration: 1.2, stagger: .08, ease: 'back.out(1.6)', delay: arrived ? .4 : .3 });
     qa('.spread__paper .piece').forEach((p, i) => gsap.to(p, { y: (i % 2 ? -1 : 1) * 40, ease: 'none', scrollTrigger: { trigger: '.spread', start: 'top top', end: 'bottom top', scrub: true } })); }
   if (has('.stores__bike')) gsap.fromTo('.stores__bike', { x: -200 }, { x: () => q('.stores__map').offsetWidth + 40, ease: 'none', scrollTrigger: { trigger: '.stores', start: 'top 70%', end: 'bottom 20%', scrub: 1.2 } });
 
@@ -776,7 +837,8 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
       const i = +panel.dataset.i, p = P[i];
       const st = { trigger: panel, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true };
       gsap.fromTo(q('.frame', panel), { xPercent: 18 }, { xPercent: -18, ease: 'none', scrollTrigger: st });
-      gsap.fromTo(q('.frame__photo, .frame__label', panel), { xPercent: 8, scale: 1.12 }, { xPercent: -8, scale: 1.02, ease: 'none', scrollTrigger: st });
+      const ph = q('.frame__photo', panel);
+      if (ph) gsap.fromTo(ph, { xPercent: 8, scale: 1.12 }, { xPercent: -8, scale: 1.02, ease: 'none', scrollTrigger: st });
       gsap.fromTo(q('.illo--a', panel), { xPercent: 90, rotate: -40 }, { xPercent: -60, rotate: 25, ease: 'none', scrollTrigger: st });
       gsap.fromTo(q('.illo--b', panel), { xPercent: 140, rotate: 30 }, { xPercent: -120, rotate: -20, ease: 'none', scrollTrigger: st });
       gsap.from(qa('.flavor__name span, .flavor__name em', panel), { yPercent: 60, opacity: 0, stagger: .08, duration: 1.1, ease: 'expo.out',
@@ -801,8 +863,10 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
 
   addEventListener('load', () => ScrollTrigger.refresh());
 } else {
+  /* sans GSAP (ou mouvement réduit) : le logo ne monte jamais dans l'en-tête,
+     donc on y laisse le menu visible en permanence */
+  document.documentElement.classList.add('no-fly');
   q('.loader')?.classList.add('is-done');
-  wipe.classList.remove('is-cover');
   qa('.page-hero__sheet').forEach(s => s.classList.add('is-in'));
   qa('.story__text .w').forEach(w => w.style.opacity = 1);
   heroStart(); scrambleAll();
@@ -819,24 +883,10 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   const cv = document.createElement('canvas'); cv.className = 'fizz'; cv.setAttribute('aria-hidden', 'true');
   document.body.appendChild(cv);
   const ctx = cv.getContext('2d');
-  /* 2e calque, sans fusion, pour les fleurs teintées de la saveur active */
-  const cv2 = document.createElement('canvas'); cv2.className = 'fizz fizz--color'; cv2.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(cv2);
-  const ctx2 = cv2.getContext('2d');
   let W = 0, H = 0;
   const resize = () => { const d = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
-    for (const [c, x] of [[cv, ctx], [cv2, ctx2]]) { c.width = W * d; c.height = H * d; x.setTransform(d, 0, 0, d, 0, 0); } };
+    cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); };
 
-  /* fleurs découpées dans fleurs.webp (zones en px de l'image source) */
-  const FL = [[0,112,82,78],[152,50,146,150],[330,0,118,140],[497,18,115,134],[208,215,64,73],[450,178,98,92],[112,277,64,63],[293,210,119,130],[615,212,85,78],[495,300,91,90],[293,370,102,91]];
-  const sheet = new Image(); sheet.src = 'img/persos/fleurs.webp';
-  let tint = null, tintColor = '';
-  function retint() {
-    const col = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#b3262b';
-    if (col === tintColor || !sheet.complete || !sheet.naturalWidth) return;
-    tintColor = col; tint = document.createElement('canvas'); tint.width = sheet.naturalWidth; tint.height = sheet.naturalHeight;
-    const t = tint.getContext('2d'); t.drawImage(sheet, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = col; t.fillRect(0, 0, tint.width, tint.height);
-  }
   resize(); addEventListener('resize', resize);
 
   const B = [], POPS = [];
@@ -853,10 +903,6 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   function spawn() {
     const small = Math.random() < .82;
     const r = small ? rnd(.8, 2.4) : rnd(3, 6.5);
-    if (Math.random() < .07 && B.filter(b => b.flower != null).length < 3) {   // de temps en temps, une fleur
-      B.push(make(rnd(W * .05, W * .95), H + 30, rnd(7, 13), { flower: Math.random() * FL.length | 0, rot: rnd(0, 6.28), vr: rnd(-.01, .01), target: rnd(.7, .95), rise: rnd(.35, .6) }));
-      return;
-    }
     if (Math.random() < .68) B.push(make(rnd(0, W), H + 10, r));
     else B.push(make(rnd(0, W), rnd(H * .3, H * .95), r, { ttl: rnd(160, 420) })); // apparition spontanée à mi-hauteur
   }
@@ -868,7 +914,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
     POPS.push({ x: b.x, y: b.y, r: b.r, t: 0 });
   }
   addEventListener('click', e => {
-    if (e.target.closest('a, button, input, textarea, label, summary, .pdp, .menu, .tools, #map, [data-open]')) return;
+    if (e.target.closest('a, button, input, textarea, label, summary, .pdp, .menu, #map, [data-open]')) return;
     burst(e.clientX, e.clientY);
   });
 
@@ -876,8 +922,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   const heroEl = q('.hero, .page-hero:not(.page-hero--compact)'), IDLE = 10000;
   let lastY = scrollY, lastScroll = performance.now();
   (function tick() {
-    ctx.clearRect(0, 0, W, H); ctx2.clearRect(0, 0, W, H);
-    if (tick.n = (tick.n || 0) + 1, tick.n % 20 === 0 || !tint) retint();
+    ctx.clearRect(0, 0, W, H);
     const dy = scrollY - lastY; lastY = scrollY;
     const now = performance.now();
     if (Math.abs(dy) > .5) lastScroll = now;
@@ -900,8 +945,7 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
         b.vx += (dx / d) * f * 2.2 + m.vx * .03 * f;
         b.vy += (dy2 / d) * f * 2.2 + m.vy * .03 * f;
         grow = f;
-        if (b.flower != null) b.vr += (m.vx * dy2 - m.vy * dx) / (d * d) * f * .02;   // la fleur tourne quand on la frôle
-        else if (speed > 28 && d < b.r + 10 && b.r > 1.6) { pop(b); }
+        if (speed > 28 && d < b.r + 10 && b.r > 1.6) pop(b);   // frôlée vite, la bulle éclate
       }
       b.vx *= .93; b.vy *= .93;
       b.ph += .03 * b.wob;
@@ -913,13 +957,6 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
       if (b.dead || b.a <= 0 || b.y < -20 || b.x < -30 || b.x > W + 30) { B.splice(i, 1); continue; }
 
       const r = b.r * (1 + grow * .35);
-      if (b.flower != null) {
-        b.vr *= .96; b.rot += b.vr + Math.sin(b.ph) * .004;
-        if (tint) { const [sx, sy, sw, sh] = FL[b.flower], s = (r * 2) / Math.max(sw, sh);
-          ctx2.save(); ctx2.globalAlpha = Math.max(0, b.a); ctx2.translate(b.x, b.y); ctx2.rotate(b.rot);
-          ctx2.drawImage(tint, sx, sy, sw, sh, -sw * s / 2, -sh * s / 2, sw * s, sh * s); ctx2.restore(); }
-        continue;
-      }
       ctx.globalAlpha = Math.max(0, b.a);
       ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, 6.2832);
       if (b.fill || r < 1.6) ctx.fill(); else {
