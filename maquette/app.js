@@ -586,18 +586,51 @@ const jlist = q('.jindex__list');
 if (jlist) {
   const rows = qa('.jrow', jlist), cnt = q('.jindex__count');
   const count = () => { const n = rows.filter(r => !r.classList.contains('is-hidden')).length; cnt.textContent = `${pad(n)} article${n > 1 ? 's' : ''}`; };
+  /* filtrage animé : les articles écartés s'effacent, les autres se replacent, les nouveaux entrent */
+  const filtre = f => {
+    const garde = r => f === 'all' || r.dataset.cat === f;
+    const visible = r => !r.classList.contains('is-hidden');
+    if (reduced || !window.gsap) { rows.forEach(r => r.classList.toggle('is-hidden', !garde(r))); count(); return; }
+
+    const sortants = rows.filter(r => visible(r) && !garde(r));
+    const entrants = rows.filter(r => !visible(r) && garde(r));
+    if (!sortants.length && !entrants.length) return;
+
+    const suite = () => {
+      /* positions avant recomposition, pour faire glisser les articles qui restent */
+      const avant = new Map(rows.filter(visible).map(r => [r, r.getBoundingClientRect().top]));
+      entrants.forEach(r => r.classList.remove('is-hidden'));
+      count();
+      rows.filter(visible).forEach(r => {
+        if (entrants.includes(r)) return;
+        const dy = (avant.get(r) ?? r.getBoundingClientRect().top) - r.getBoundingClientRect().top;
+        if (Math.abs(dy) > 1) gsap.fromTo(r, { y: dy }, { y: 0, duration: .45, ease: 'power2.out', clearProps: 'transform' });
+      });
+      gsap.fromTo(entrants, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: .45, stagger: .04, ease: 'power2.out', clearProps: 'transform,opacity' });
+    };
+
+    if (!sortants.length) { suite(); return; }
+    gsap.to(sortants, { opacity: 0, y: -8, duration: .22, ease: 'power2.in',
+      onComplete: () => { sortants.forEach(r => { r.classList.add('is-hidden'); gsap.set(r, { clearProps: 'transform,opacity' }); }); suite(); } });
+  };
   qa('.jindex .chips button').forEach(b => b.addEventListener('click', () => {
     qa('.jindex .chips button').forEach(x => x.classList.toggle('is-on', x === b));
-    rows.forEach(r => r.classList.toggle('is-hidden', b.dataset.f !== 'all' && r.dataset.cat !== b.dataset.f));
-    count();
+    filtre(b.dataset.f);
   }));
   count();
   const pv = q('.jpreview'), pimg = q('img', pv);
   let tx = 0, ty = 0, cx = 0, cy = 0, run = false;
   const follow = () => { cx += (tx - cx) * .14; cy += (ty - cy) * .14; pv.style.left = cx + 'px'; pv.style.top = cy + 'px'; if (run) requestAnimationFrame(follow); };
+  /* l'aperçu est centré sur le curseur, sans jamais sortir de la fenêtre */
+  const PV_W = 240, PV_H = PV_W * 5 / 4, PV_M = 8;
+  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+  const place = e => {
+    tx = clamp(e.clientX, PV_W / 2 + PV_M, innerWidth - PV_W / 2 - PV_M);
+    ty = clamp(e.clientY, PV_H / 2 + PV_M, innerHeight - PV_H / 2 - PV_M);
+  };
   rows.forEach(r => {
-    r.addEventListener('pointerenter', e => { pimg.src = r.dataset.img; tx = cx = e.clientX - 240; ty = cy = e.clientY; pv.classList.add('is-on'); if (!run) { run = true; follow(); } });
-    r.addEventListener('pointermove', e => { tx = e.clientX - 240; ty = e.clientY; });   // à gauche du curseur : le titre (à droite) reste lisible
+    r.addEventListener('pointerenter', e => { pimg.src = r.dataset.img; place(e); cx = tx; cy = ty; pv.classList.add('is-on'); if (!run) { run = true; follow(); } });
+    r.addEventListener('pointermove', place);
     r.addEventListener('pointerleave', () => { pv.classList.remove('is-on'); });
   });
   jlist.addEventListener('pointerleave', () => { run = false; });
