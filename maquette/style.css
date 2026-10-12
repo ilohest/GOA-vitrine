@@ -385,7 +385,8 @@ h1.hero__word { margin: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- Ribbon ---------- */
-.ribbon { position: relative; height: 100svh; overflow: hidden; background: color-mix(in srgb, var(--accent) 7%, var(--paper)); transition: --accent 1s var(--ease); }
+.ribbon { position: relative; height: 100svh; overflow: hidden; background: var(--paper); transition: --accent 1s var(--ease), background-color 1s var(--ease); }
+.ribbon.is-tinted { background: color-mix(in srgb, var(--accent) 7%, var(--paper)); }   /* teinte seulement une fois la 1re saveur présentée */
 .ribbon__track { display: flex; height: 100%; width: max-content; will-change: transform; }
 .panel { position: relative; height: 100%; flex: none; }
 .panel--intro { width: 46vw; padding: 120px var(--gut) var(--gut) calc(var(--gut) * 2); display: flex; flex-direction: column; }
@@ -849,8 +850,6 @@ fieldset.cell > legend + * { clear: both; }
   background: repeating-linear-gradient(90deg, var(--ink-fixed) 0 1px, transparent 1px 3px, var(--ink-fixed) 3px 6px, transparent 6px 7px, var(--ink-fixed) 7px 8px, transparent 8px 11px, var(--ink-fixed) 11px 13px, transparent 13px 14px); }
 .slip__end { text-align: center; margin: 8px 0 0; color: color-mix(in srgb, var(--ink-fixed) 70%, transparent); text-transform: uppercase; letter-spacing: .12em; }
 /* lien « Vous êtes pro ? » sur la fiche de contact : visible quand « Professionnel » est coché */
-.cell__pro { display: none; margin-top: 10px; font-size: var(--t-2xs); border-bottom: 1px solid currentColor; width: fit-content; }
-.cell:has(input[value="pro"]:checked) .cell__pro { display: block; }
 @media (max-width: 900px) { .slip { right: var(--gut); top: 64px; } }
 
 /* ---------- Product page (image 5) ---------- */
@@ -909,8 +908,8 @@ fieldset.cell > legend + * { clear: both; }
 /* ---------- Cursor ---------- */
 .cursor { position: fixed; left: 0; top: 0; z-index: 99; pointer-events: none; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: var(--r-circle); background: var(--ink); display: grid; place-items: center; transition: width .4s var(--ease), height .4s var(--ease), margin .4s var(--ease), background .4s; }
 .cursor span { font: 500 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--paper); opacity: 0; transition: opacity .3s; }
-.cursor.is-big { width: 74px; height: 74px; margin: -37px 0 0 -37px; background: var(--accent); }
-.cursor.is-big span { opacity: 1; color: #fff; }
+.cursor.is-big { width: 74px; height: 74px; margin: -37px 0 0 -37px; background: var(--cur, var(--accent)); }
+.cursor.is-big span { opacity: 1; color: var(--cur-fg, #fff); }
 @media (pointer: coarse) { .cursor { display: none; } }
 
 /* ---------- Tools ---------- */

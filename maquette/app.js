@@ -486,6 +486,10 @@ if (matchMedia('(pointer: fine)').matches) {
   document.addEventListener('pointerover', e => {
     const t = e.target.closest('[data-cursor]');
     cursor.classList.toggle('is-big', !!t); q('span', cursor).textContent = t ? t.dataset.cursor : '';
+    /* sur une saveur, le curseur prend sa couleur (--c) plutôt que l'accent courant */
+    const c = t && getComputedStyle(t).getPropertyValue('--c').trim();
+    if (c) { cursor.style.setProperty('--cur', c); cursor.style.setProperty('--cur-fg', fgFor(c)); }
+    else if (t) { cursor.style.removeProperty('--cur'); cursor.style.removeProperty('--cur-fg'); }
   });
 }
 
@@ -861,13 +865,28 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   if (track) mm.add('(min-width: 901px)', () => {
     const dist = () => track.scrollWidth - innerWidth;
     const bar = q('.ribbon__bar i'), cnt = q('.ribbon__count'), lab = q('.ribbon__label'), ribbon = q('.ribbon');
+    const panels = qa('.flavor');
+    /* la teinte du ruban suit la saveur présentée : celle dont le bord gauche a passé 55 % de l'écran */
+    let on = -1;
+    const setFlavor = i => {
+      if (i === on) return; on = i; const p = P[i];
+      ribbon.style.setProperty('--accent', p.c); document.documentElement.style.setProperty('--accent', p.c);
+      cnt.textContent = `${pad(i + 1)} / ${pad(P.length)}`; scramble(lab, full(p));
+    };
+    ribbon.style.setProperty('--accent', P[0].c);   // jamais la couleur tournante du hero
     const tween = gsap.to(track, {
       x: () => -dist(), ease: 'none',
+      /* suit le glissement réel du ruban (lissé par le scrub), pas le scroll brut */
+      onUpdate() {
+        ribbon.classList.toggle('is-tinted', this.progress() > .015);   /* fond papier tant que le ruban n'a pas commencé à glisser */
+        const x = -gsap.getProperty(track, 'x'), edge = innerWidth * .55;
+        let i = 0; panels.forEach((el, k) => { if (el.offsetLeft - x <= edge) i = k; });
+        setFlavor(+panels[i].dataset.i);
+      },
       scrollTrigger: { trigger: ribbon, start: 'top top', end: () => '+=' + dist(), pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1,
         onUpdate: s => gsap.set(bar, { scaleX: s.progress }) }
     });
-    qa('.flavor').forEach(panel => {
-      const i = +panel.dataset.i, p = P[i];
+    panels.forEach(panel => {
       const st = { trigger: panel, containerAnimation: tween, start: 'left right', end: 'right left', scrub: true };
       gsap.fromTo(q('.frame', panel), { xPercent: 18 }, { xPercent: -18, ease: 'none', scrollTrigger: st });
       const ph = q('.frame__photo', panel);
@@ -876,10 +895,6 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
       gsap.fromTo(q('.illo--b', panel), { xPercent: 140, rotate: 30 }, { xPercent: -120, rotate: -20, ease: 'none', scrollTrigger: st });
       gsap.from(qa('.flavor__name span, .flavor__name em', panel), { yPercent: 60, opacity: 0, stagger: .08, duration: 1.1, ease: 'expo.out',
         scrollTrigger: { trigger: panel, containerAnimation: tween, start: 'left 70%' } });
-      ScrollTrigger.create({ trigger: panel, containerAnimation: tween, start: 'left 55%', end: 'right 55%',
-        onToggle: s => { if (!s.isActive) return;
-          ribbon.style.setProperty('--accent', p.c); document.documentElement.style.setProperty('--accent', p.c);
-          cnt.textContent = `${pad(i + 1)} / ${pad(P.length)}`; scramble(lab, full(p)); } });
     });
   });
 
@@ -929,22 +944,47 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
   document.documentElement.addEventListener('pointerleave', () => { m.x = m.y = -9999; });
 
   const rnd = (a, b) => a + Math.random() * (b - a);
-  function make(x, y, r, extra = {}) {
-    return Object.assign({ x, y, r, vx: 0, vy: 0, rise: .18 + r * .07 + rnd(0, .25), ph: rnd(0, 6.28), wob: rnd(.3, .9),
-      a: 0, target: rnd(.35, .75), life: 0, ttl: Infinity, fill: Math.random() < .3, dying: false }, extra);
+
+  /* sprites dessinés une seule fois : chaque bulle n'est ensuite qu'un drawImage */
+  const SP = 128;
+  const sprite = draw => { const c = document.createElement('canvas'); c.width = c.height = SP; draw(c.getContext('2d'), SP / 2); return c; };
+  const radial = (g, r, stops) => { const gr = g.createRadialGradient(0, 0, 0, 0, 0, r); stops.forEach(([o, a]) => gr.addColorStop(o, `rgba(255,255,255,${a})`)); return gr; };
+  const BUB = sprite((g, c) => {
+    const R = c - 2;
+    g.translate(c, c);
+    g.fillStyle = radial(g, R, [[0, 0], [.6, .04], [.85, .26], [.95, .85], [1, .1]]);   // bord plus dense : effet de Fresnel
+    g.beginPath(); g.arc(0, 0, R, 0, 6.2832); g.fill();
+    g.save(); g.translate(-R * .36, -R * .4); g.rotate(-.75); g.scale(1, .58);        // reflet de la fenêtre
+    g.fillStyle = radial(g, R * .32, [[0, .95], [.5, .5], [1, 0]]);
+    g.beginPath(); g.arc(0, 0, R * .32, 0, 6.2832); g.fill(); g.restore();
+    g.lineCap = 'round'; g.strokeStyle = 'rgba(255,255,255,.4)'; g.lineWidth = R * .07; // lumière rebondie, en bas à droite
+    g.beginPath(); g.arc(0, 0, R * .8, .2, 1.4); g.stroke();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(-R * .56, -R * .12, R * .05, 0, 6.2832); g.fill();
+  });
+  const GLINT = sprite((g, c) => { g.translate(c, c); g.fillStyle = radial(g, c, [[0, 1], [.3, .65], [1, 0]]); g.fillRect(-c, -c, SP, SP); });
+  const BOKEH = sprite((g, c) => { g.translate(c, c); g.fillStyle = radial(g, c, [[0, .08], [.7, .14], [.9, .32], [1, 0]]); g.fillRect(-c, -c, SP, SP); });
+
+  /* z : profondeur (0 = loin, 1 = près, au-delà = flou de premier plan) */
+  function make(x, y, r, z, extra = {}) {
+    return Object.assign({ x, y, r, z, vx: 0, vy: 0, rise: .15 + z * .85 + rnd(0, .25), ph: rnd(0, 6.28), wob: rnd(.3, .9),
+      a: 0, target: rnd(.4, .8) * (.5 + Math.min(z, 1) * .5), life: 0, ttl: Infinity, glint: Math.random() < .25, dying: false }, extra);
   }
   function spawn() {
-    const small = Math.random() < .82;
-    const r = small ? rnd(.8, 2.4) : rnd(3, 6.5);
-    if (Math.random() < .68) B.push(make(rnd(0, W), H + 10, r));
-    else B.push(make(rnd(0, W), rnd(H * .3, H * .95), r, { ttl: rnd(160, 420) })); // apparition spontanée à mi-hauteur
+    const x = rnd(0, W);
+    if (Math.random() < .035) return B.push(make(x, H + 40, rnd(14, 28), rnd(1.1, 1.4), { bokeh: true, target: rnd(.25, .45) }));
+    const z = Math.random() ** 1.6;
+    const r = z < .5 ? rnd(.8, 1.4) + z * 2.4 : rnd(2.4, 3.6) + (z - .5) * 10;
+    if (Math.random() < .68) B.push(make(x, H + 10, r, z));
+    else B.push(make(x, rnd(H * .3, H * .95), r, z, { ttl: rnd(160, 420) })); // apparition spontanée à mi-hauteur
   }
   function burst(x, y, n = 12) {
-    for (let i = 0; i < n; i++) B.push(make(x + rnd(-6, 6), y + rnd(-6, 6), rnd(.8, 3.6), { vx: rnd(-2.6, 2.6), vy: rnd(-3.4, -.6), a: .9, ttl: rnd(90, 220) }));
+    for (let i = 0; i < n; i++) B.push(make(x + rnd(-6, 6), y + rnd(-6, 6), rnd(.8, 4.2), rnd(.5, 1), { vx: rnd(-2.6, 2.6), vy: rnd(-3.4, -.6), a: .9, ttl: rnd(90, 220) }));
   }
-  function pop(b) {
+  /* léger parallaxe à la souris : les plans proches bougent plus que les lointains */
+  let par = 0;
+  function pop(b, x = b.x) {
     b.dead = true;
-    POPS.push({ x: b.x, y: b.y, r: b.r, t: 0 });
+    POPS.push({ x, y: b.y, r: b.r, t: 0 });
   }
   addEventListener('click', e => {
     if (e.target.closest('a, button, input, textarea, label, summary, .pdp, .menu, #map, [data-open]')) return;
@@ -964,39 +1004,40 @@ if (window.gsap && window.ScrollTrigger && !reduced) {
     const active = inHero || idle;
     if (active && B.length < max() && Math.random() < (inHero ? .09 : .06)) spawn();
     const speed = Math.hypot(m.vx, m.vy);
+    par += ((m.x > -9000 ? m.x / W - .5 : 0) - par) * .05;
     ctx.strokeStyle = ctx.fillStyle = '#fff';
     ctx.lineWidth = 1;
 
     for (let i = B.length - 1; i >= 0; i--) {
       const b = B[i];
       b.life++;
-      /* souris : répulsion douce + un peu de l'élan du geste */
-      const dx = b.x - m.x, dy2 = b.y - m.y, d = Math.hypot(dx, dy2) || 1, R = 120;
+      const px = b.x - par * (b.z - .4) * 60;   // position affichée, décalée selon la profondeur
+      /* souris : répulsion douce + un peu de l'élan du geste (moins forte au loin) */
+      const dx = px - m.x, dy2 = b.y - m.y, d = Math.hypot(dx, dy2) || 1, R = 120, k = .35 + Math.min(b.z, 1) * .8;
       let grow = 0;
-      if (d < R) {
+      if (d < R && !b.bokeh) {
         const f = (1 - d / R) ** 2;
-        b.vx += (dx / d) * f * 2.2 + m.vx * .03 * f;
-        b.vy += (dy2 / d) * f * 2.2 + m.vy * .03 * f;
+        b.vx += ((dx / d) * f * 2.2 + m.vx * .03 * f) * k;
+        b.vy += ((dy2 / d) * f * 2.2 + m.vy * .03 * f) * k;
         grow = f;
-        if (speed > 28 && d < b.r + 10 && b.r > 1.6) pop(b);   // frôlée vite, la bulle éclate
+        if (speed > 28 && d < b.r + 10 && b.r > 1.6) pop(b, px);   // frôlée vite, la bulle éclate
       }
       b.vx *= .93; b.vy *= .93;
       b.ph += .03 * b.wob;
       b.x += b.vx + Math.sin(b.ph) * .28 * b.wob;
-      b.y += b.vy - b.rise - dy * (.15 + b.r * .04);   // léger effet de profondeur au scroll
+      b.y += b.vy - b.rise - dy * (.08 + b.z * .45);   // profondeur au scroll : les plans proches filent plus vite
 
       if (!b.dying && (b.life > b.ttl || b.y < H * .06 || !active)) b.dying = true;   // on reprend le scroll : fondu
       b.a += b.dying ? (active ? -.02 : -.035) : (b.target - b.a) * (inHero ? .04 : .015);
-      if (b.dead || b.a <= 0 || b.y < -20 || b.x < -30 || b.x > W + 30) { B.splice(i, 1); continue; }
+      if (b.dead || b.a <= 0 || b.y < -40 || px < -40 || px > W + 40) { B.splice(i, 1); continue; }
 
       const r = b.r * (1 + grow * .35);
       ctx.globalAlpha = Math.max(0, b.a);
-      ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, 6.2832);
-      if (b.fill || r < 1.6) ctx.fill(); else {
-        ctx.stroke();
-        ctx.globalAlpha = Math.max(0, b.a) * .8;               // petit reflet
-        ctx.beginPath(); ctx.arc(b.x - r * .38, b.y - r * .38, Math.max(.6, r * .22), 0, 6.2832); ctx.fill();
-      }
+      if (b.bokeh) { ctx.drawImage(BOKEH, px - r, b.y - r, r * 2, r * 2); continue; }
+      if (r < 1.8 || (b.glint && r < 3)) { const s = r * 3.4; ctx.drawImage(GLINT, px - s / 2, b.y - s / 2, s, s); continue; }
+      /* la bulle ondule en montant : légère déformation élastique */
+      const q2 = Math.sin(b.ph * 1.7) * .07, w = r * 2.06 * (1 + q2), h = r * 2.06 * (1 - q2);
+      ctx.drawImage(BUB, px - w / 2, b.y - h / 2, w, h);
     }
     /* éclats */
     for (let i = POPS.length - 1; i >= 0; i--) {
