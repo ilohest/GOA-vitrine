@@ -81,7 +81,7 @@ const stage = q('.stage');
 if (stage) {
   const FRUIT = { 'cola-chai': 'cola1', 'citron-gingembre': 'citron', 'framboise-hibiscus': 'framboise', 'mangue-vanille': 'mangue1', 'orange-cardamome': 'orange', 'pomme-sureau': 'pomme', 'passion-mojito': 'citron' };
   const row = q('.pickrow');
-  row.innerHTML = P.map((p, i) => `<button class="pick" data-i="${i}"><span class="pick__name">${full(p)}</span></button>`).join('');
+  row.innerHTML = P.map((p, i) => `<button class="pick" data-i="${i}" style="--c:${p.c}"><span class="pick__name">${full(p)}</span></button>`).join('');
   const bottle = q('.stage__bottle', stage), pills = q('.stage__bottom .pills', stage);
   let cur = -1;
   const show = i => {

@@ -160,6 +160,8 @@ ul, ol { padding: 0; list-style: none; }
 .stage__title { font-size: clamp(46px, 4.6vw, 78px); line-height: .96; margin-top: 0; animation: popUp .5s var(--ease) backwards; }
 .stage__title span, .stage__title em { display: block; }
 .stage__title em { font-style: italic; }
+/* les deux mots du titre, la pastille active et l'illustration prennent la couleur de l'étiquette de la saveur (--c, posée par app.js) */
+.stage__title, .stage__title em { color: var(--c); transition: color .4s; }
 .stage__mid { position: relative; display: grid; place-items: center; padding-block: clamp(10px, 2vh, 24px); }
 .stage__bottle { height: clamp(300px, 56vh, 560px); width: auto; max-width: 100%; object-fit: contain; mix-blend-mode: multiply; animation: pop .6s var(--pop) backwards; transition: transform .3s ease-out; }
 .stage__bottle.label { height: auto; width: min(52vw, 560px); mix-blend-mode: normal; border-radius: 4px; transform: rotate(-5deg); }
@@ -580,8 +582,10 @@ main { padding-top: var(--hdr); }
 .pick { display: block; }
 .pick:hover, .pick.is-on { transform: none; }
 .pick__name { display: block; padding: 8px 4px; border-radius: 99px; background: none; box-shadow: inset 0 0 0 1px var(--line); font-size: 12.5px; line-height: 1.25; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background-color .25s, color .25s, box-shadow .25s, transform .35s var(--pop); }
-.pick:hover .pick__name { transform: scale(1.04); box-shadow: inset 0 0 0 1px var(--ink); }
-.pick.is-on .pick__name { background: var(--ink); color: var(--paper); box-shadow: none; }
+.pick:hover .pick__name { transform: scale(1.04); box-shadow: inset 0 0 0 1px var(--c); }
+/* chaque pastille porte la couleur de l'étiquette de sa saveur (--c posée par app.js sur le bouton) */
+.pick .pick__name { color: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent); }
+.pick.is-on .pick__name, .pick.is-on:hover .pick__name { background: var(--c); color: var(--paper); box-shadow: none; }
 @media (min-width: 901px) {
   .gamme { height: calc(100svh - 56px); min-height: 580px; padding: var(--hdr) 0 14px; display: flex; flex-direction: column; scroll-margin-top: calc(var(--hdr) * -1 + 28px); }   /* la section (écran − 56 px) se pose avec 28 px d'air en haut et 28 px en bas : contenu centré */   /* la section réserve déjà la place de l'en-tête : l'ancre ne doit pas la doubler */
   .gamme > .wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -601,7 +605,7 @@ main { padding-top: var(--hdr); }
 @media (max-width: 900px) { .pickrow { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; } .pick { flex: 0 0 auto; scroll-snap-align: start; } .pick__name { padding: 8px 14px; white-space: nowrap; } }
 
 /* un petit ingrédient sous le titre (essai : à retirer en supprimant .stage__fruit) */
-.stage__fruit { display: block; width: clamp(46px, 4.6vw, 72px); aspect-ratio: 1; margin-top: 14px; background: var(--ink); -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat; transform-origin: 30% 70%; animation: fruitIn .7s var(--pop) backwards; }
+.stage__fruit { display: block; width: clamp(46px, 4.6vw, 72px); aspect-ratio: 1; margin-top: 14px; background: var(--c); transition: background-color .4s; -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat; transform-origin: 30% 70%; animation: fruitIn .7s var(--pop) backwards; }
 @keyframes fruitIn { from { opacity: 0; transform: scale(.6) rotate(-20deg); } }
 
 .stage { position: relative; }
@@ -932,3 +936,24 @@ main { padding-top: var(--hdr); }
   .nf__perso { margin: 0 0 0 20px; width: 120px; }
   .nf__count { position: static; grid-column: 1 / -1; }
 }
+
+
+/* =========================================================
+   MENU : sans crochets, en serif (même voix que le pied de page)
+   ========================================================= */
+@media (min-width: 1001px) {
+  .nav a.br { gap: 0; font-family: var(--f-display); font-size: 20px; line-height: 1.2; text-transform: none; letter-spacing: -.005em;
+    padding-bottom: 3px; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat;
+    transition: background-size .5s var(--ease), color .25s; }
+  .nav a.br::before, .nav a.br::after { content: none; }
+  .nav a.br:hover { gap: 0; color: var(--terra); font-style: italic; background-size: 100% 1.5px; }
+  .nav a.br[aria-current="page"] { background-size: 100% 1.5px; }
+  /* Espace pro : une pastille au trait, pleine au survol */
+  .hdr__pro.br { gap: 0; padding: 7px 16px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px currentColor; font-family: var(--f-sans); font-size: 13.5px; font-weight: 500; text-transform: none; letter-spacing: 0;
+    transition: background-color .3s, color .3s, transform .45s var(--pop); }
+  .hdr__pro.br::before, .hdr__pro.br::after { content: none; }
+  .hdr__pro.br:hover { gap: 0; background: var(--ink); color: var(--paper); transform: scale(1.05) rotate(-2deg); }
+}
+
+/* pastilles de la gamme : la police des titres */
+.pick__name { font-family: var(--f-display); font-size: 17px; letter-spacing: -.005em; line-height: 1.2; padding-block: 6px; }
