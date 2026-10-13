@@ -96,7 +96,7 @@ if (stage) {
     q('.stage__desc', stage).textContent = p.desc;
     pills.innerHTML = [`Thé ${p.the.toLowerCase()}`, p.notes, '4,3 g de sucres', 'Bio', 'Non pasteurisé', p.bottle ? '1 L · 35 cl' : '1 L'].map(t => `<li><span class="pill">${t}</span></li>`).join('');
     qa('.pick', row).forEach((b, k) => b.classList.toggle('is-on', k === i));
-    [bottle, q('.stage__title', stage)].forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+    [bottle, q('.stage__title', stage), q('.stage__tag', stage), q('.stage__desc', stage)].forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
   };
   q('.stage__arrow--l', stage).addEventListener('click', () => show(cur - 1));
   q('.stage__arrow--r', stage).addEventListener('click', () => show(cur + 1));

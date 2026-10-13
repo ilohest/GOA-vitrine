@@ -957,3 +957,13 @@ main { padding-top: var(--hdr); }
 
 /* pastilles de la gamme : la police des titres */
 .pick__name { font-family: var(--f-display); font-size: 17px; letter-spacing: -.005em; line-height: 1.2; padding-block: 6px; }
+
+
+/* gamme : au changement de saveur, le texte, le tag et les pastilles se renouvellent d'un petit mouvement (on voit que ça change) */
+@keyframes swapIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.stage__tag, .stage__desc { animation: swapIn .55s var(--ease) backwards; }
+.stage__tag { animation-delay: .04s; }
+.stage__desc { animation-delay: .14s; }
+.stage .pills li { animation: swapIn .5s var(--ease) backwards; }
+.stage .pills li:nth-child(1) { animation-delay: .1s; } .stage .pills li:nth-child(2) { animation-delay: .15s; } .stage .pills li:nth-child(3) { animation-delay: .2s; }
+.stage .pills li:nth-child(4) { animation-delay: .25s; } .stage .pills li:nth-child(5) { animation-delay: .3s; } .stage .pills li:nth-child(6) { animation-delay: .35s; }
