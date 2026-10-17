@@ -65,7 +65,9 @@ const solid = () => hdr.classList.toggle('is-solid', !document.body.classList.co
 if (document.body.classList.contains('home')) {
   const logo = q('.hdr__logo', hdr);
   const setLogoX = () => hdr.style.setProperty('--logo-x', (hdr.clientWidth - 14 - logo.offsetWidth - parseFloat(getComputedStyle(hdr).paddingLeft)) + 'px');
-  setLogoX(); addEventListener('resize', setLogoX);
+  /* recalculé dès que l'en-tête change de largeur (apparition de la barre de défilement, polices, redimensionnement) */
+  setLogoX(); addEventListener('resize', setLogoX); addEventListener('load', setLogoX);
+  if (window.ResizeObserver) new ResizeObserver(setLogoX).observe(hdr);
 }
 addEventListener('scroll', solid, { passive: true }); solid();
 const setMenu = open => { nav.classList.toggle('is-open', open); burger.setAttribute('aria-expanded', open); if (open) hdr.classList.add('is-solid'); else solid(); };
@@ -98,8 +100,11 @@ if (stage) {
     qa('.pick', row).forEach((b, k) => b.classList.toggle('is-on', k === i));
     [bottle, q('.stage__title', stage), q('.stage__tag', stage), q('.stage__desc', stage)].forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
   };
-  q('.stage__arrow--l', stage).addEventListener('click', () => show(cur - 1));
-  q('.stage__arrow--r', stage).addEventListener('click', () => show(cur + 1));
+  /* un clic toutes les 350 ms au plus : évite l'emballement quand on spamme la flèche */
+  let lastStep = 0;
+  const step = d => { const t = performance.now(); if (t - lastStep < 350) return; lastStep = t; show(cur + d); };
+  q('.stage__arrow--l', stage).addEventListener('click', () => step(-1));
+  q('.stage__arrow--r', stage).addEventListener('click', () => step(1));
   addEventListener('keydown', e => {
     if (e.target.closest && e.target.closest('input, textarea')) return;
     const r = stage.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
@@ -393,7 +398,9 @@ const jrTrack = q('.jr__track');
 if (jrTrack) {
   const arrows = qa('.jr__arrow');
   const upd = () => { const max = jrTrack.scrollWidth - jrTrack.clientWidth - 2; arrows[0].disabled = jrTrack.scrollLeft <= 2; arrows[1].disabled = jrTrack.scrollLeft >= max; };
+  let lastJr = 0;
   arrows.forEach(a => a.addEventListener('click', () => {
+    const now = performance.now(); if (now - lastJr < 350) return; lastJr = now;
     const step = q('.jr-card', jrTrack).getBoundingClientRect().width + 14;
     jrTrack.scrollBy({ left: +a.dataset.dir * step, behavior: reduced ? 'auto' : 'smooth' });
   }));
