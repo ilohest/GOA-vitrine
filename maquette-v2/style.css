@@ -765,6 +765,7 @@ main { padding-top: var(--hdr); }
 .ct__row:nth-child(1) { grid-column: 1 / 5; } .ct__row:nth-child(2) { grid-column: 5 / 8; }
 .ct__row:nth-child(3) { grid-column: 8 / 10; } .ct__row:nth-child(4) { grid-column: 10 / 13; }
 .ct__row .br::before, .ct__row .br::after { content: none; }
+.ct__row .br { display: inline; white-space: normal; }
 .ct__row .br:hover { gap: 0; font-style: italic; }   /* sans crochets : le survol passe en italique, comme le menu */
 .ct__row .tag { color: var(--ink-2); padding: 0; }
 .ct__perso { flex: none; width: clamp(96px, 11vw, 170px); margin: 0; }
